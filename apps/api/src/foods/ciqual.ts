@@ -7,6 +7,34 @@
  */
 
 /**
+ * Décode un fichier Ciqual en respectant l'encodage qu'il déclare.
+ *
+ * La table est publiée en **windows-1252**, pas en UTF-8 : lue en UTF-8, elle
+ * donne « Protéines » au lieu de « Protéines », et plus rien ne se cherche.
+ * On lit l'encodage dans le prologue XML plutôt que de le supposer, pour que
+ * le jour où l'ANSES passera à UTF-8 l'import continue de marcher.
+ */
+export function decodeXml(bytes: Buffer): string {
+  // Le prologue est en ASCII dans tous les encodages concernés : on peut le
+  // lire avant de connaître le reste.
+  const prolog = bytes.subarray(0, 200).toString('latin1');
+  const declared = /encoding\s*=\s*["']([\w-]+)["']/i.exec(prolog)?.[1]?.toLowerCase();
+
+  const encoding =
+    declared === undefined || declared === 'utf-8' || declared === 'utf8'
+      ? 'utf-8'
+      : declared === 'windows-1252' || declared === 'iso-8859-1' || declared === 'latin1'
+        ? 'windows-1252'
+        : declared;
+
+  try {
+    return new TextDecoder(encoding).decode(bytes);
+  } catch {
+    throw new Error(`Encodage « ${encoding} » inconnu : impossible de lire le fichier Ciqual.`);
+  }
+}
+
+/**
  * Lit un fichier XML Ciqual en enregistrements plats.
  *
  * Le format est volontairement simple : une balise par enregistrement, des
@@ -24,7 +52,17 @@ export function parseFlatXml(xml: string, recordTag: string): Record<string, str
     const record: Record<string, string> = {};
 
     for (const [, field, rawValue] of body!.matchAll(fieldPattern)) {
-      if (rawValue!.includes('<')) {
+      /*
+       * La table Ciqual n'est **pas un XML bien formé** : quatre noms
+       * d'aliments contiennent un `<` non échappé (« Bière sans alcool
+       * (<1,2° alcool) »). Un analyseur XML strict refuserait le fichier
+       * entier ; celui-ci s'en accommode, parce qu'un `<` suivi d'autre chose
+       * qu'un nom de balise ne ressemble à rien.
+       *
+       * En revanche, une vraie balise imbriquée voudrait dire que le format
+       * a changé, et là il faudrait un vrai analyseur.
+       */
+      if (/<\/?[A-Za-z][A-Za-z0-9_]*\s*>/.test(rawValue!)) {
         throw new Error(
           `Le champ ${field} contient du XML imbriqué : le format a changé, il faut un vrai analyseur.`,
         );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAmount, parseFlatXml } from '../src/foods/ciqual.js';
+import { decodeXml, parseAmount, parseFlatXml } from '../src/foods/ciqual.js';
 
 /**
  * Un extrait fidèle au format publié par l'ANSES : une balise par
@@ -102,5 +102,48 @@ describe('parseAmount', () => {
 
   it('supporte les espaces insécables de la table', () => {
     expect(parseAmount('< 0,5')).toBeCloseTo(0.5, 2);
+  });
+});
+
+describe('le XML Ciqual n’est pas bien formé', () => {
+  it('accepte un « < » non échappé dans une valeur', () => {
+    // Quatre noms d'aliments de la table contiennent un « < » brut, par
+    // exemple « Bière sans alcool (<1,2° alcool) ». Un analyseur XML strict
+    // refuse le fichier entier ; le nôtre doit lire la valeur telle quelle.
+    const xml =
+      '<TABLE><ALIM><alim_code>1</alim_code>' +
+      '<alim_nom_fr>Bière sans alcool (<1,2° alcool)</alim_nom_fr></ALIM></TABLE>';
+
+    const rows = parseFlatXml(xml, 'ALIM');
+
+    expect(rows[0]?.alim_nom_fr).toBe('Bière sans alcool (<1,2° alcool)');
+  });
+
+  it('refuse toujours une vraie balise imbriquée', () => {
+    const xml = '<TABLE><ALIM><alim_nom_fr>Riz <b>blanc</b></alim_nom_fr></ALIM></TABLE>';
+
+    expect(() => parseFlatXml(xml, 'ALIM')).toThrow(/analyseur/);
+  });
+});
+
+describe('decodeXml', () => {
+  it('lit un fichier déclaré en windows-1252', () => {
+    // La table est publiée dans cet encodage, pas en UTF-8 : lue en UTF-8,
+    // « Protéines » devient illisible et plus rien ne se cherche.
+    const prolog = '<?xml version="1.0" encoding="windows-1252" ?>\n<TABLE>';
+    const bytes = Buffer.concat([
+      Buffer.from(prolog, 'latin1'),
+      // « Protéines » en windows-1252 : le « é » tient sur un seul octet.
+      Buffer.from([0x50, 0x72, 0x6f, 0x74, 0xe9, 0x69, 0x6e, 0x65, 0x73]),
+      Buffer.from('</TABLE>', 'latin1'),
+    ]);
+
+    expect(decodeXml(bytes)).toContain('Protéines');
+  });
+
+  it('lit un fichier en UTF-8 quand c’est ce qu’il déclare', () => {
+    const xml = '<?xml version="1.0" encoding="UTF-8" ?><TABLE>Protéines</TABLE>';
+
+    expect(decodeXml(Buffer.from(xml, 'utf8'))).toContain('Protéines');
   });
 });

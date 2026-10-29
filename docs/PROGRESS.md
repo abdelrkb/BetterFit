@@ -299,6 +299,20 @@ En cas de rechute ailleurs : rapatrier les fichiers hors du bac à sable, par ex
 - Les libellés des poses (« Squat », « Soulevé de terre ») sont stockés dans
   `packages/mascot`, pas dans `locales/fr.json`. À reprendre le jour où l'anglais arrivera.
 
+## À reprendre plus tard
+- **DETTE — Ciqual importé depuis un miroir, pas depuis la source officielle.**
+  Le 29 octobre 2026, le site de l'ANSES était en maintenance (503). Sur décision du
+  porteur du projet, les quatre fichiers XML ont été pris sur le miroir GitHub
+  `webeweb/ciqual-library` (licence MIT, fichiers d'origine non modifiés, utilisés comme
+  fixtures de test) :
+  `https://raw.githubusercontent.com/webeweb/ciqual-library/HEAD/tests/Fixtures/`.
+  Les fichiers ont été contrôlés avant import : 3 185 aliments, 211 898 teneurs,
+  67 constituants, 136 groupes, accents corrects, valeurs cohérentes.
+  **À faire** : relancer `pnpm foods:import` sans option dès que
+  `https://ciqual.anses.fr` répond, pour repartir de la source officielle et passer à la
+  version la plus récente de la table. L'import est rejouable : il met à jour les
+  aliments existants par leur code Ciqual.
+
 ## Points ouverts
 - Modèle économique, publication sur les stores, nom de domaine, fournisseur d'e-mails, question HDS.
 - **Fournisseur SMTP** à choisir : nécessaire pour envoyer vraiment les e-mails

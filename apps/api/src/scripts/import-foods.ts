@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 import { buildFoodSearchText } from '@betterfit/shared';
 import { sql as raw } from 'drizzle-orm';
 import { db, sql } from '../db/client.js';
-import { parseAmount, parseFlatXml } from '../foods/ciqual.js';
+import { decodeXml, parseAmount, parseFlatXml } from '../foods/ciqual.js';
 import { foods } from '../db/schema.js';
 import { DATA_DIR } from '../paths.js';
 
@@ -22,12 +22,18 @@ import { DATA_DIR } from '../paths.js';
  * il met à jour les aliments existants par leur code Ciqual et ajoute les
  * nouveaux, sans toucher aux aliments perso ni aux produits scannés.
  *
- *   pnpm foods:import                    # télécharge et importe
- *   pnpm foods:import --file chemin.zip  # depuis une archive déjà téléchargée
+ *   pnpm foods:import                     # télécharge depuis l'ANSES et importe
+ *   pnpm foods:import --file chemin.zip   # depuis une archive déjà téléchargée
+ *   pnpm foods:import --dir chemin/       # depuis des XML déjà décompressés
  *
  * L'archive est celle publiée sur data.gouv.fr, qui redirige vers l'ANSES.
- * Quand le site de l'ANSES est en maintenance, télécharger l'archive à la
- * main et passer `--file` fait tout aussi bien l'affaire.
+ * Quand le site de l'ANSES est en maintenance, `--file` ou `--dir` prennent
+ * le relais.
+ *
+ * ATTENTION — la base actuelle a été importée **depuis un miroir**, le site de
+ * l'ANSES étant en maintenance le 29 octobre 2026. Relancer cet import sans
+ * option dès que `https://ciqual.anses.fr` répond, pour repartir de la source
+ * officielle (voir « À reprendre plus tard » dans `docs/PROGRESS.md`).
  */
 
 const CIQUAL_ZIP_URL = 'https://www.data.gouv.fr/fr/datasets/r/e31dd87c-8ad0-43e4-bdaa-af84ad243dc6';
@@ -114,53 +120,97 @@ async function findFile(dir: string, prefix: string): Promise<string> {
   return resolve(dir, found);
 }
 
+/** Un libellé utilisable, ou `null` : la table écrit « - » pour « aucun ». */
+function pick(value: string | undefined): string | null {
+  const trimmed = (value ?? '').trim();
+  return trimmed.length > 0 && trimmed !== '-' ? trimmed : null;
+}
+
+/** Lit un fichier Ciqual et le rend en enregistrements plats. */
+async function readTable(path: string, recordTag: string): Promise<Record<string, string>[]> {
+  return parseFlatXml(decodeXml(await readFile(path)), recordTag);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const fileIndex = args.indexOf('--file');
-  const archive =
-    fileIndex >= 0 && args[fileIndex + 1]
-      ? resolve(args[fileIndex + 1]!)
-      : resolve(CACHE_DIR, 'ciqual.zip');
+  const option = (name: string) => {
+    const index = args.indexOf(name);
+    return index >= 0 && args[index + 1] ? resolve(args[index + 1]!) : null;
+  };
 
-  if (!existsSync(archive)) {
-    await downloadArchive(archive);
+  const givenDir = option('--dir');
+  let workDir: string;
+
+  if (givenDir) {
+    console.log(`Fichiers Ciqual lus dans ${givenDir}`);
+    workDir = givenDir;
   } else {
-    console.log(`Archive déjà présente : ${archive}`);
+    const archive = option('--file') ?? resolve(CACHE_DIR, 'ciqual.zip');
+
+    if (!existsSync(archive)) {
+      await downloadArchive(archive);
+    } else {
+      console.log(`Archive déjà présente : ${archive}`);
+    }
+
+    workDir = resolve(CACHE_DIR, 'ciqual');
+    await extract(archive, workDir);
   }
 
-  const workDir = resolve(CACHE_DIR, 'ciqual');
-  await extract(archive, workDir);
-
-  const [alimXml, compoXml, constXml] = await Promise.all([
-    readFile(await findFile(workDir, 'alim_2'), 'utf8'),
-    readFile(await findFile(workDir, 'compo'), 'utf8'),
-    readFile(await findFile(workDir, 'const'), 'utf8'),
+  const [alims, groups, compos, consts] = await Promise.all([
+    readTable(await findFile(workDir, 'alim_2'), 'ALIM'),
+    readTable(await findFile(workDir, 'alim_grp'), 'ALIM_GRP'),
+    readTable(await findFile(workDir, 'compo'), 'COMPO'),
+    readTable(await findFile(workDir, 'const'), 'CONST'),
   ]);
 
-  const alims = parseFlatXml(alimXml, 'ALIM');
-  const compos = parseFlatXml(compoXml, 'COMPO');
-  const consts = parseFlatXml(constXml, 'CONST');
-
-  console.log(`${alims.length} aliments, ${compos.length} teneurs, ${consts.length} constituants.`);
-
-  // Quel code de constituant correspond à quelle colonne chez nous.
-  const columnOfConst = new Map<string, NutrientColumn>();
-
-  for (const row of consts) {
-    const name = row.const_nom_fr ?? '';
-    const nutrient = NUTRIENTS.find((candidate) => candidate.match.test(name));
-    if (nutrient && row.const_code) columnOfConst.set(row.const_code, nutrient.column);
-  }
-
-  const missing = NUTRIENTS.filter(
-    (nutrient) => ![...columnOfConst.values()].includes(nutrient.column),
+  console.log(
+    `${alims.length} aliments, ${compos.length} teneurs, ${consts.length} constituants, ` +
+      `${groups.length} groupes.`,
   );
 
-  if (missing.length > 0) {
-    throw new Error(
-      `Constituants introuvables dans la table : ${missing.map((n) => n.column).join(', ')}. ` +
-        'Les noms ont changé : il faut mettre à jour NUTRIENTS.',
-    );
+  /*
+   * Quel code de constituant correspond à quelle colonne chez nous.
+   *
+   * On refuse toute ambiguïté : si deux constituants répondent à la même
+   * règle, on importerait silencieusement l'un **ou** l'autre selon l'ordre
+   * du fichier, avec un chiffre plausible et faux. Mieux vaut s'arrêter.
+   */
+  const columnOfConst = new Map<string, NutrientColumn>();
+
+  for (const nutrient of NUTRIENTS) {
+    const matches = consts.filter((row) => nutrient.match.test(row.const_nom_fr ?? ''));
+
+    if (matches.length === 0) {
+      throw new Error(
+        `Constituant introuvable pour ${nutrient.column}. Les noms de la table ont changé : ` +
+          'il faut mettre à jour NUTRIENTS.',
+      );
+    }
+
+    if (matches.length > 1) {
+      throw new Error(
+        `La règle de ${nutrient.column} vise ${matches.length} constituants ` +
+          `(${matches.map((row) => row.const_nom_fr).join(' / ')}). Il faut la préciser.`,
+      );
+    }
+
+    columnOfConst.set(matches[0]!.const_code!, nutrient.column);
+  }
+
+  /*
+   * Le nom de catégorie se trouve dans le fichier des groupes, pas dans
+   * celui des aliments : il faut faire la jointure sur les trois niveaux de
+   * code. « 000000 » et « - » signifient « pas de sous-groupe ».
+   */
+  const categoryOfGroup = new Map<string, string>();
+
+  for (const group of groups) {
+    const key = `${group.alim_grp_code}/${group.alim_ssgrp_code}/${group.alim_ssssgrp_code}`;
+    const label =
+      pick(group.alim_ssssgrp_nom_fr) ?? pick(group.alim_ssgrp_nom_fr) ?? pick(group.alim_grp_nom_fr);
+
+    if (label) categoryOfGroup.set(key, label);
   }
 
   // Les teneurs, regroupées par aliment.
@@ -180,7 +230,10 @@ async function main(): Promise<void> {
     .map((alim) => {
       const values = nutrientsOf.get(alim.alim_code!) ?? {};
       const name = alim.alim_nom_fr!;
-      const category = alim.alim_ssssgrp_nom_fr || alim.alim_ssgrp_nom_fr || alim.alim_grp_nom_fr || '';
+      const category =
+        categoryOfGroup.get(
+          `${alim.alim_grp_code}/${alim.alim_ssgrp_code}/${alim.alim_ssssgrp_code}`,
+        ) ?? '';
 
       return {
         source: 'ciqual' as const,
@@ -198,7 +251,7 @@ async function main(): Promise<void> {
         saturatedFatG: values.saturatedFatG ?? null,
         fiberG: values.fiberG ?? null,
         saltG: values.saltG ?? null,
-        servingLabel: '',
+      servingLabel: '',
         servingG: null,
         searchText: buildFoodSearchText({ name, category }),
       };
