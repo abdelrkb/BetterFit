@@ -62,5 +62,4 @@ describe('weightTrend', () => {
 
     expect(trend[1]?.trendKg).toBe(78);
   });
-
 });

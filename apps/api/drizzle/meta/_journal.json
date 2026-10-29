@@ -8,6 +8,13 @@
       "when": 1793236433942,
       "tag": "0000_broken_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793275954559,
+      "tag": "0001_funny_hairball",
+      "breakpoints": true
     }
   ]
 }

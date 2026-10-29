@@ -1,9 +1,5 @@
 import { Mascot } from '@betterfit/mascot';
-import {
-  LEVEL_LABELS_FR,
-  TRAINING_GOAL_LABELS_FR,
-  type ProgramSummary,
-} from '@betterfit/shared';
+import { LEVEL_LABELS_FR, TRAINING_GOAL_LABELS_FR, type ProgramSummary } from '@betterfit/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';

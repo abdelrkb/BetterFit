@@ -42,11 +42,7 @@ export function TodaySessionCard() {
     return (
       <Card tone="soft" title={t('workout.resumeTitle')}>
         <Body>{t('workout.resumeBody', { name: current.sessionName })}</Body>
-        <Button
-          block
-          label={t('workout.resume')}
-          onPress={() => router.push('/workout/live')}
-        />
+        <Button block label={t('workout.resume')} onPress={() => router.push('/workout/live')} />
       </Card>
     );
   }

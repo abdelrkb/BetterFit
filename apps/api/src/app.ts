@@ -20,6 +20,8 @@ import { programRoutes } from './routes/programs.js';
 import { workoutRoutes } from './routes/workouts.js';
 import { healthRoutes } from './routes/health.js';
 import { meRoutes } from './routes/me.js';
+import { nutritionRoutes } from './routes/nutrition.js';
+import { recipeRoutes } from './routes/recipes.js';
 import { weightRoutes } from './routes/weight.js';
 
 export async function buildApp() {
@@ -68,7 +70,10 @@ export async function buildApp() {
     if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
       request.log.info({ err: error }, 'requête mal formée');
 
-      return sendError(reply, new HttpError(statusCode, 'request/malformed', 'Requête mal formée.'));
+      return sendError(
+        reply,
+        new HttpError(statusCode, 'request/malformed', 'Requête mal formée.'),
+      );
     }
 
     request.log.error({ err: error }, 'erreur non gérée');
@@ -108,6 +113,8 @@ export async function buildApp() {
   await app.register(workoutRoutes, { prefix: API_PREFIX });
   await app.register(coachingRoutes, { prefix: API_PREFIX });
   await app.register(weightRoutes, { prefix: API_PREFIX });
+  await app.register(nutritionRoutes, { prefix: API_PREFIX });
+  await app.register(recipeRoutes, { prefix: API_PREFIX });
 
   return app;
 }

@@ -196,7 +196,9 @@ function CustomExerciseForm({
       <Card overline={t('exercises.musclesPrimary')}>
         <Caption>{t('exercises.musclesPrimaryHint')}</Caption>
         <MusclePicker selected={primaryMuscles} onToggle={setPrimaryMuscles} max={4} />
-        {errors.primaryMuscles ? <Caption style={styles.error}>{errors.primaryMuscles}</Caption> : null}
+        {errors.primaryMuscles ? (
+          <Caption style={styles.error}>{errors.primaryMuscles}</Caption>
+        ) : null}
       </Card>
 
       <Card overline={t('exercises.musclesSecondary')}>

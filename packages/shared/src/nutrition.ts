@@ -106,10 +106,7 @@ export function basalMetabolicRate(input: {
   age: number;
 }): number {
   return (
-    10 * input.weightKg +
-    6.25 * input.heightCm -
-    5 * input.age +
-    (input.sex === 'male' ? 5 : -161)
+    10 * input.weightKg + 6.25 * input.heightCm - 5 * input.age + (input.sex === 'male' ? 5 : -161)
   );
 }
 
@@ -145,8 +142,7 @@ export function computeNutritionTargets(input: NutritionInput): NutritionTargets
     carbsPct: share(carbsG * KCAL_PER_GRAM.carbs),
     kgPerWeek: round((input.deficitKcal * 7) / KCAL_PER_KG, 2),
     deficitPct: maintenanceKcal > 0 ? round((input.deficitKcal / maintenanceKcal) * 100) : 0,
-    waterLiters:
-      input.waterLiters ?? round((input.weightKg * WATER_ML_PER_KG) / 1000, 1),
+    waterLiters: input.waterLiters ?? round((input.weightKg * WATER_ML_PER_KG) / 1000, 1),
     deficitTooLarge:
       maintenanceKcal > 0 && input.deficitKcal / maintenanceKcal > MAX_SAFE_DEFICIT_RATIO,
   });
@@ -178,10 +174,7 @@ export function sumMacros(items: Partial<MacroTotals>[]): MacroTotals {
  * Valeurs d'un aliment pour une quantité donnée, à partir des valeurs
  * pour 100 g.
  */
-export function macrosForQuantity(
-  per100g: Partial<MacroTotals>,
-  grams: number,
-): MacroTotals {
+export function macrosForQuantity(per100g: Partial<MacroTotals>, grams: number): MacroTotals {
   const ratio = grams / 100;
 
   return {

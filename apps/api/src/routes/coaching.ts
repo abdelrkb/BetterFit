@@ -590,65 +590,69 @@ export const coachingRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // ---------------------------------------------------------------- Clients
 
-  app.get('/coach/clients', { schema: { response: { 200: clientListSchema } } }, async (request) => {
-    const user = currentUser(request);
-    await assertIsCoach(user.id);
+  app.get(
+    '/coach/clients',
+    { schema: { response: { 200: clientListSchema } } },
+    async (request) => {
+      const user = currentUser(request);
+      await assertIsCoach(user.id);
 
-    const rows = await db
-      .select({ relation: coachingRelations, user: users })
-      .from(coachingRelations)
-      .innerJoin(users, eq(users.id, coachingRelations.clientId))
-      .where(and(eq(coachingRelations.coachId, user.id), eq(coachingRelations.status, 'active')))
-      .orderBy(users.name);
+      const rows = await db
+        .select({ relation: coachingRelations, user: users })
+        .from(coachingRelations)
+        .innerJoin(users, eq(users.id, coachingRelations.clientId))
+        .where(and(eq(coachingRelations.coachId, user.id), eq(coachingRelations.status, 'active')))
+        .orderBy(users.name);
 
-    const clientIds = rows.map((row) => row.user.id);
-    if (clientIds.length === 0) return { items: [] };
+      const clientIds = rows.map((row) => row.user.id);
+      if (clientIds.length === 0) return { items: [] };
 
-    const workouts = await db
-      .select({ userId: workoutLogs.userId, finishedAt: workoutLogs.finishedAt })
-      .from(workoutLogs)
-      .where(inArray(workoutLogs.userId, clientIds));
+      const workouts = await db
+        .select({ userId: workoutLogs.userId, finishedAt: workoutLogs.finishedAt })
+        .from(workoutLogs)
+        .where(inArray(workoutLogs.userId, clientIds));
 
-    const assigned = await db
-      .select({ assignedToUserId: programs.assignedToUserId })
-      .from(programs)
-      .where(and(eq(programs.ownerId, user.id), inArray(programs.assignedToUserId, clientIds)));
+      const assigned = await db
+        .select({ assignedToUserId: programs.assignedToUserId })
+        .from(programs)
+        .where(and(eq(programs.ownerId, user.id), inArray(programs.assignedToUserId, clientIds)));
 
-    const weights = await db
-      .select({
-        userId: weightEntries.userId,
-        date: weightEntries.date,
-        weightKg: weightEntries.weightKg,
-      })
-      .from(weightEntries)
-      .where(inArray(weightEntries.userId, clientIds))
-      .orderBy(desc(weightEntries.date));
+      const weights = await db
+        .select({
+          userId: weightEntries.userId,
+          date: weightEntries.date,
+          weightKg: weightEntries.weightKg,
+        })
+        .from(weightEntries)
+        .where(inArray(weightEntries.userId, clientIds))
+        .orderBy(desc(weightEntries.date));
 
-    const since = fourWeeksAgo();
+      const since = fourWeeksAgo();
 
-    return {
-      items: rows.map(({ relation, user: client }) => {
-        const theirs = workouts.filter((row) => row.userId === client.id);
-        const last = theirs.reduce<Date | null>(
-          (latest, row) => (latest === null || row.finishedAt > latest ? row.finishedAt : latest),
-          null,
-        );
+      return {
+        items: rows.map(({ relation, user: client }) => {
+          const theirs = workouts.filter((row) => row.userId === client.id);
+          const last = theirs.reduce<Date | null>(
+            (latest, row) => (latest === null || row.finishedAt > latest ? row.finishedAt : latest),
+            null,
+          );
 
-        return {
-          relationId: relation.id,
-          userId: client.id,
-          name: client.name,
-          email: client.email,
-          status: relation.status,
-          since: (relation.acceptedAt ?? relation.invitedAt).toISOString(),
-          lastWorkoutAt: last ? last.toISOString() : null,
-          workoutsLast28Days: theirs.filter((row) => row.finishedAt >= since).length,
-          assignedPrograms: assigned.filter((row) => row.assignedToUserId === client.id).length,
-          latestWeightKg: weights.find((row) => row.userId === client.id)?.weightKg ?? null,
-        };
-      }),
-    };
-  });
+          return {
+            relationId: relation.id,
+            userId: client.id,
+            name: client.name,
+            email: client.email,
+            status: relation.status,
+            since: (relation.acceptedAt ?? relation.invitedAt).toISOString(),
+            lastWorkoutAt: last ? last.toISOString() : null,
+            workoutsLast28Days: theirs.filter((row) => row.finishedAt >= since).length,
+            assignedPrograms: assigned.filter((row) => row.assignedToUserId === client.id).length,
+            latestWeightKg: weights.find((row) => row.userId === client.id)?.weightKg ?? null,
+          };
+        }),
+      };
+    },
+  );
 
   app.get(
     '/coach/clients/:id',

@@ -4,17 +4,7 @@ import { CalorieRing } from '@/components/CalorieRing';
 import { MacroBars } from '@/components/MacroBars';
 import { decimal } from '@/lib/format';
 import { useDailyTargets } from '@/lib/use-daily-targets';
-import {
-  Banner,
-  Body,
-  Caption,
-  Card,
-  Metric,
-  Screen,
-  Title,
-  spacing,
-  useWideScreen,
-} from '@/ui';
+import { Banner, Body, Caption, Card, Metric, Screen, Title, spacing, useWideScreen } from '@/ui';
 
 /**
  * L'onglet Nutrition : les objectifs du jour et leur explication.

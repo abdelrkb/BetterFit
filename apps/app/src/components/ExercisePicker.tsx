@@ -58,7 +58,8 @@ export function ExercisePicker({
   });
 
   const muscleOptions = useMemo(
-    () => MUSCLE_GROUP_ORDER.map((group) => ({ value: group, label: MUSCLE_GROUP_LABELS_FR[group] })),
+    () =>
+      MUSCLE_GROUP_ORDER.map((group) => ({ value: group, label: MUSCLE_GROUP_LABELS_FR[group] })),
     [],
   );
 

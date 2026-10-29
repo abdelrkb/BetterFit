@@ -102,7 +102,10 @@ export default function ProgramScreen() {
         <View style={styles.chips}>
           <Chip tone="dark" label={LEVEL_LABELS_FR[item.details.level]} />
           <Chip label={PLACE_LABELS_FR[item.details.place]} />
-          <Chip tone="outline" label={t('training.minutes', { count: item.details.sessionMinutes })} />
+          <Chip
+            tone="outline"
+            label={t('training.minutes', { count: item.details.sessionMinutes })}
+          />
           {item.isTemplate ? <Chip tone="outline" label={t('training.template')} /> : null}
         </View>
         {item.details.coachNote.length > 0 ? (
@@ -125,7 +128,10 @@ export default function ProgramScreen() {
             {session.targetMuscles.map((muscle) => (
               <Chip key={muscle} label={MUSCLE_LABELS_FR[muscle as Muscle]} />
             ))}
-            <Chip tone="outline" label={t('training.minutes', { count: session.durationMinutes })} />
+            <Chip
+              tone="outline"
+              label={t('training.minutes', { count: session.durationMinutes })}
+            />
           </View>
 
           {session.warmup.length > 0 ? (
@@ -147,7 +153,9 @@ export default function ProgramScreen() {
                 <Caption>
                   {t('training.setsAndReps', { sets: line.sets, reps: line.reps || '—' })}
                   {line.load ? ` · ${line.load}` : ''}
-                  {line.restSeconds ? ` · ${t('training.restSummary', { seconds: line.restSeconds })}` : ''}
+                  {line.restSeconds
+                    ? ` · ${t('training.restSummary', { seconds: line.restSeconds })}`
+                    : ''}
                   {line.tempo ? ` · ${t('training.tempo')} ${line.tempo}` : ''}
                 </Caption>
                 {line.notes.length > 0 ? <Caption>{line.notes}</Caption> : null}

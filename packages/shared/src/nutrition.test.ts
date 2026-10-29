@@ -28,8 +28,7 @@ describe('basalMetabolicRate', () => {
   });
 
   it('ajoute 5 au lieu de retirer 161 pour un homme', () => {
-    const difference =
-      basalMetabolicRate({ ...julie, sex: 'male' }) - basalMetabolicRate(julie);
+    const difference = basalMetabolicRate({ ...julie, sex: 'male' }) - basalMetabolicRate(julie);
 
     expect(difference).toBe(166);
   });

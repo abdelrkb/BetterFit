@@ -14,6 +14,4 @@ export const API_PREFIX = '/api/v1';
 export const booleanQueryParam = () =>
   z
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
-    .transform((value) =>
-      typeof value === 'boolean' ? value : value === 'true' || value === '1',
-    );
+    .transform((value) => (typeof value === 'boolean' ? value : value === 'true' || value === '1'));

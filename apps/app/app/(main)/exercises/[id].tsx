@@ -150,7 +150,8 @@ function Photos({ exercise }: { exercise: Exercise }) {
   const usable = exercise.images.filter((_, index) => !failed[index]);
 
   if (usable.length === 0) {
-    const pose = exercise.mascotPose && isPoseName(exercise.mascotPose) ? exercise.mascotPose : 'stand';
+    const pose =
+      exercise.mascotPose && isPoseName(exercise.mascotPose) ? exercise.mascotPose : 'stand';
 
     return (
       <Card tone="soft" style={styles.posterFallback}>

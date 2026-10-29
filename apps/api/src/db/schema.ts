@@ -388,7 +388,9 @@ export const weeklySchedule = pgTable(
     dayOfWeek: smallint('day_of_week').notNull(),
     sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   },
-  (table) => [uniqueIndex('weekly_schedule_program_day_unique').on(table.programId, table.dayOfWeek)],
+  (table) => [
+    uniqueIndex('weekly_schedule_program_day_unique').on(table.programId, table.dayOfWeek),
+  ],
 );
 
 export const programsRelations = relations(programs, ({ one, many }) => ({
@@ -579,3 +581,284 @@ export const coachingRelationsRelations = relations(coachingRelations, ({ one })
 
 export type CoachingRelationRow = typeof coachingRelations.$inferSelect;
 export type InvitationRow = typeof invitations.$inferSelect;
+
+/* ------------------------------------------------------------------ */
+/* Nutrition (étape 7)                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Les réglages d'un programme de nutrition.
+ *
+ * Le sexe, l'âge, le poids et la taille y sont **recopiés**, pas lus dans le
+ * profil : le programme doit rester fidèle aux chiffres sur lesquels le coach
+ * l'a construit. Sinon, une pesée du lendemain changerait rétroactivement les
+ * cibles d'un programme déjà imprimé.
+ */
+export const nutritionDetails = pgTable('nutrition_details', {
+  programId: uuid('program_id')
+    .primaryKey()
+    .references(() => programs.id, { onDelete: 'cascade' }),
+
+  sex: sex('sex').notNull(),
+  age: smallint('age').notNull(),
+  weightKg: real('weight_kg').notNull(),
+  heightCm: smallint('height_cm').notNull(),
+  activityLevel: activityLevel('activity_level').notNull(),
+
+  /** Écart au maintien, en kcal. Positif = déficit, négatif = surplus. */
+  deficitKcal: integer('deficit_kcal').notNull().default(400),
+  proteinGPerKg: real('protein_g_per_kg').notNull().default(2),
+  fatGPerKg: real('fat_g_per_kg').notNull().default(0.9),
+  fiberG: smallint('fiber_g').notNull().default(30),
+  /** Hydratation imposée. `null` : calculée à 35 ml par kilo. */
+  waterLiters: real('water_liters'),
+
+  goalTitle: text('goal_title').notNull().default(''),
+  goalText: text('goal_text').notNull().default(''),
+  preferred: text('preferred').array().notNull().default([]),
+  limited: text('limited').array().notNull().default([]),
+  coachNote: text('coach_note').notNull().default(''),
+
+  /** Nombre de jours que couvre la liste de courses. */
+  shoppingDays: smallint('shopping_days').notNull().default(7),
+  budgetCents: integer('budget_cents'),
+});
+
+/** Un repas de la journée type. */
+export const meals = pgTable(
+  'meals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    name: text('name').notNull(),
+    /** Heure indicative, texte libre : « 07h30 », « au réveil ». */
+    time: text('time').notNull().default(''),
+    /**
+     * Calories annoncées pour le repas, saisies à la main comme dans le
+     * prototype. `null` : on additionne les lignes.
+     */
+    kcalOverride: integer('kcal_override'),
+  },
+  (table) => [index('meals_program_idx').on(table.programId)],
+);
+
+/**
+ * Une ligne d'un repas.
+ *
+ * Deux modes de saisie, ligne par ligne : un aliment de la base avec une
+ * quantité en grammes (macros calculées, étape 8), ou du texte libre avec les
+ * valeurs à la main. `foodId` reste `null` dans le second cas.
+ */
+export const mealItems = pgTable(
+  'meal_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mealId: uuid('meal_id')
+      .notNull()
+      .references(() => meals.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    /** Rempli à l'étape 8, quand la base d'aliments existera. */
+    foodId: uuid('food_id'),
+    label: text('label').notNull().default(''),
+    /** Quantité en texte libre : « 160 g », « 2 œufs », « à volonté ». */
+    quantity: text('quantity').notNull().default(''),
+    /** Quantité en grammes, quand elle est chiffrable : sert aux calculs. */
+    quantityG: real('quantity_g'),
+    alternative: text('alternative').notNull().default(''),
+    kcal: integer('kcal'),
+    proteinG: real('protein_g'),
+    carbsG: real('carbs_g'),
+    fatG: real('fat_g'),
+  },
+  (table) => [index('meal_items_meal_idx').on(table.mealId)],
+);
+
+/** Un rayon de la liste de courses. */
+export const shoppingCategories = pgTable(
+  'shopping_categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    name: text('name').notNull(),
+  },
+  (table) => [index('shopping_categories_program_idx').on(table.programId)],
+);
+
+/**
+ * Un article de la liste de courses.
+ *
+ * `checked` appartient au client : c'est lui qui coche en faisant ses courses,
+ * même sur un programme que son coach lui a assigné.
+ */
+export const shoppingItems = pgTable(
+  'shopping_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => shoppingCategories.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    label: text('label').notNull().default(''),
+    quantity: text('quantity').notNull().default(''),
+    checked: boolean('checked').notNull().default(false),
+    /** Prix retenu pour cet article, en centimes. */
+    priceCents: integer('price_cents'),
+    /** Enseigne où ce prix a été relevé. */
+    store: text('store').notNull().default(''),
+  },
+  (table) => [index('shopping_items_category_idx').on(table.categoryId)],
+);
+
+/**
+ * Un prix mémorisé, pour ne pas le ressaisir à chaque liste.
+ *
+ * La clé est le libellé **normalisé** de l'article (sans accents, en
+ * minuscules) et l'enseigne. Les prix venus d'Open Prices sont marqués
+ * `source = 'open_prices'`, ceux saisis à la main `source = 'manual'`.
+ */
+export const foodPrices = pgTable(
+  'food_prices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** `null` pour un prix partagé (Open Prices), sinon le propriétaire. */
+    ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    store: text('store').notNull().default(''),
+    priceCents: integer('price_cents').notNull(),
+    /** Quantité à laquelle ce prix correspond : « le kilo », « la boîte ». */
+    unit: text('unit').notNull().default(''),
+    source: text('source').notNull().default('manual'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('food_prices_owner_label_store_unique').on(table.ownerId, table.label, table.store),
+    index('food_prices_label_idx').on(table.label),
+  ],
+);
+
+/** Une recette, réutilisable d'un programme à l'autre. */
+export const recipes = pgTable(
+  'recipes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    /** Moment conseillé : « Déjeuner », « Collation »… texte libre. */
+    category: text('category').notNull().default(''),
+    prepMinutes: smallint('prep_minutes'),
+    cookMinutes: smallint('cook_minutes'),
+    servings: smallint('servings').notNull().default(1),
+    /** Valeurs **par portion**. */
+    kcal: integer('kcal'),
+    proteinG: real('protein_g'),
+    carbsG: real('carbs_g'),
+    fatG: real('fat_g'),
+    /** Chemin du fichier sur le disque de l'API, jamais une URL publique. */
+    photoPath: text('photo_path'),
+    tip: text('tip').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('recipes_owner_idx').on(table.ownerId)],
+);
+
+export const recipeIngredients = pgTable(
+  'recipe_ingredients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    foodId: uuid('food_id'),
+    label: text('label').notNull().default(''),
+    quantity: text('quantity').notNull().default(''),
+    quantityG: real('quantity_g'),
+  },
+  (table) => [index('recipe_ingredients_recipe_idx').on(table.recipeId)],
+);
+
+export const recipeSteps = pgTable(
+  'recipe_steps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+    text: text('text').notNull().default(''),
+  },
+  (table) => [index('recipe_steps_recipe_idx').on(table.recipeId)],
+);
+
+/** Les recettes jointes à un programme de nutrition. */
+export const programRecipes = pgTable(
+  'program_recipes',
+  {
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: smallint('position').notNull(),
+  },
+  (table) => [
+    uniqueIndex('program_recipes_unique').on(table.programId, table.recipeId),
+    index('program_recipes_program_idx').on(table.programId),
+  ],
+);
+
+export const nutritionDetailsRelations = relations(nutritionDetails, ({ one }) => ({
+  program: one(programs, { fields: [nutritionDetails.programId], references: [programs.id] }),
+}));
+
+export const mealsRelations = relations(meals, ({ one, many }) => ({
+  program: one(programs, { fields: [meals.programId], references: [programs.id] }),
+  items: many(mealItems),
+}));
+
+export const mealItemsRelations = relations(mealItems, ({ one }) => ({
+  meal: one(meals, { fields: [mealItems.mealId], references: [meals.id] }),
+}));
+
+export const shoppingCategoriesRelations = relations(shoppingCategories, ({ one, many }) => ({
+  program: one(programs, { fields: [shoppingCategories.programId], references: [programs.id] }),
+  items: many(shoppingItems),
+}));
+
+export const shoppingItemsRelations = relations(shoppingItems, ({ one }) => ({
+  category: one(shoppingCategories, {
+    fields: [shoppingItems.categoryId],
+    references: [shoppingCategories.id],
+  }),
+}));
+
+export const recipesRelations = relations(recipes, ({ one, many }) => ({
+  owner: one(users, { fields: [recipes.ownerId], references: [users.id] }),
+  ingredients: many(recipeIngredients),
+  steps: many(recipeSteps),
+}));
+
+export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeIngredients.recipeId], references: [recipes.id] }),
+}));
+
+export const recipeStepsRelations = relations(recipeSteps, ({ one }) => ({
+  recipe: one(recipes, { fields: [recipeSteps.recipeId], references: [recipes.id] }),
+}));
+
+export type NutritionDetailsRow = typeof nutritionDetails.$inferSelect;
+export type MealRow = typeof meals.$inferSelect;
+export type MealItemRow = typeof mealItems.$inferSelect;
+export type ShoppingCategoryRow = typeof shoppingCategories.$inferSelect;
+export type ShoppingItemRow = typeof shoppingItems.$inferSelect;
+export type RecipeRow = typeof recipes.$inferSelect;

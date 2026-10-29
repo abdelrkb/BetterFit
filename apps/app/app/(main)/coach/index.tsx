@@ -68,7 +68,9 @@ export default function CoachScreen() {
   }
 
   if (!coaching.data?.isCoach) {
-    return <Activate onDone={() => void queryClient.invalidateQueries({ queryKey: ['coaching'] })} />;
+    return (
+      <Activate onDone={() => void queryClient.invalidateQueries({ queryKey: ['coaching'] })} />
+    );
   }
 
   return (

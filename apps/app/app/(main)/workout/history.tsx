@@ -8,18 +8,7 @@ import { formatSeconds } from '@/components/RestTimer';
 import { errorMessage } from '@/lib/errors';
 import { listWorkouts } from '@/lib/workouts';
 import { useWorkout } from '@/stores/workout';
-import {
-  Banner,
-  Body,
-  Button,
-  Caption,
-  Card,
-  Heading,
-  Screen,
-  Title,
-  colors,
-  spacing,
-} from '@/ui';
+import { Banner, Body, Button, Caption, Card, Heading, Screen, Title, colors, spacing } from '@/ui';
 
 export default function WorkoutHistoryScreen() {
   const { t } = useTranslation();
@@ -61,7 +50,9 @@ export default function WorkoutHistoryScreen() {
             <Card title={item.sessionName || t('history.freeSession')}>
               <Caption>{formatDateTime(item.finishedAt)}</Caption>
               <View style={styles.metrics}>
-                <Caption>{t('history.duration', { value: formatSeconds(item.durationSeconds) })}</Caption>
+                <Caption>
+                  {t('history.duration', { value: formatSeconds(item.durationSeconds) })}
+                </Caption>
                 <Caption>{t('history.sets', { count: item.completedSets })}</Caption>
                 <Caption>{t('history.volume', { value: Math.round(item.totalVolumeKg) })}</Caption>
               </View>

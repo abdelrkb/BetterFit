@@ -226,7 +226,10 @@ function Editor({ programId, initial }: { programId?: string; initial: Draft }) 
             value={String(draft.details.sessionMinutes)}
             onChangeText={(value) =>
               patch({
-                details: { ...draft.details, sessionMinutes: Number(value.replace(/\D/g, '')) || 0 },
+                details: {
+                  ...draft.details,
+                  sessionMinutes: Number(value.replace(/\D/g, '')) || 0,
+                },
               })
             }
           />
@@ -276,11 +279,7 @@ function Editor({ programId, initial }: { programId?: string; initial: Draft }) 
                   onPress={() => {
                     // Un appui fait défiler : repos → A → B → … → repos.
                     const next =
-                      value === null
-                        ? 0
-                        : value + 1 >= draft.sessions.length
-                          ? null
-                          : value + 1;
+                      value === null ? 0 : value + 1 >= draft.sessions.length ? null : value + 1;
 
                     patch({
                       schedule: draft.schedule.map((item, i) => (i === index ? next : item)),
@@ -342,12 +341,7 @@ function Editor({ programId, initial }: { programId?: string; initial: Draft }) 
         }
       />
 
-      <Button
-        block
-        label={t('common.save')}
-        loading={save.isPending}
-        onPress={submit}
-      />
+      <Button block label={t('common.save')} loading={save.isPending} onPress={submit} />
       <Button block variant="ghost" label={t('common.cancel')} onPress={() => router.back()} />
     </Screen>
   );
@@ -595,12 +589,7 @@ function SessionCard({
           />
 
           {total > 1 ? (
-            <Button
-              block
-              variant="ghost"
-              label={t('training.removeSession')}
-              onPress={onRemove}
-            />
+            <Button block variant="ghost" label={t('training.removeSession')} onPress={onRemove} />
           ) : null}
         </>
       ) : (

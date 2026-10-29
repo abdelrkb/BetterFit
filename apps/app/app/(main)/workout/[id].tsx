@@ -6,18 +6,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { formatSeconds } from '@/components/RestTimer';
 import { errorMessage } from '@/lib/errors';
 import { deleteWorkout, fetchWorkout } from '@/lib/workouts';
-import {
-  Banner,
-  Body,
-  Button,
-  Caption,
-  Card,
-  Metric,
-  Screen,
-  Title,
-  colors,
-  spacing,
-} from '@/ui';
+import { Banner, Body, Button, Caption, Card, Metric, Screen, Title, colors, spacing } from '@/ui';
 
 export default function WorkoutDetailScreen() {
   const { t } = useTranslation();

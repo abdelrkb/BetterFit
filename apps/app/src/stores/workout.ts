@@ -117,7 +117,9 @@ export const useWorkout = create<WorkoutState>((set, get) => {
 
     await persist({
       ...current,
-      exercises: current.exercises.map((exercise, i) => (i === index ? change(exercise) : exercise)),
+      exercises: current.exercises.map((exercise, i) =>
+        i === index ? change(exercise) : exercise,
+      ),
     });
   }
 

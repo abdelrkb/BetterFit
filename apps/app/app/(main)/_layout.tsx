@@ -20,7 +20,6 @@ import { colors, fonts, radii, spacing, TAB_BAR_HEIGHT } from '@/ui';
  * deviendrait un onglet.
  */
 
-
 export default function MainLayout() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

@@ -52,11 +52,14 @@ export function ProgressChart({ points }: { points: ProgressPoint[] }) {
   const plotHeight = HEIGHT - PADDING.top - PADDING.bottom;
 
   const x = (index: number) =>
-    PADDING.left + (points.length === 1 ? plotWidth / 2 : (index / (points.length - 1)) * plotWidth);
+    PADDING.left +
+    (points.length === 1 ? plotWidth / 2 : (index / (points.length - 1)) * plotWidth);
   const y = (value: number) => PADDING.top + plotHeight - ((value - bottom) / range) * plotHeight;
 
   const pathOf = (key: Series['key']) =>
-    points.map((point, index) => `${index === 0 ? 'M' : 'L'}${x(index)} ${y(point[key])}`).join(' ');
+    points
+      .map((point, index) => `${index === 0 ? 'M' : 'L'}${x(index)} ${y(point[key])}`)
+      .join(' ');
 
   const gridValues = [bottom, bottom + range / 2, top];
 

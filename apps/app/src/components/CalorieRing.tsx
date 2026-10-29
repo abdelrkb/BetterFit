@@ -42,12 +42,7 @@ export function CalorieRing({ targetKcal, consumedKcal }: CalorieRingProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View
-        style={styles.ring}
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={label}
-      >
+      <View style={styles.ring} accessible accessibilityRole="image" accessibilityLabel={label}>
         <Svg width={SIZE} height={SIZE}>
           <Circle
             cx={SIZE / 2}

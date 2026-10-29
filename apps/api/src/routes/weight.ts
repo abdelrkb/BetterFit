@@ -94,9 +94,7 @@ export const weightRoutes: FastifyPluginAsyncZod = async (app) => {
 
       const [removed] = await db
         .delete(weightEntries)
-        .where(
-          and(eq(weightEntries.userId, user.id), eq(weightEntries.date, request.params.date)),
-        )
+        .where(and(eq(weightEntries.userId, user.id), eq(weightEntries.date, request.params.date)))
         .returning({ date: weightEntries.date });
 
       if (!removed) throw notFound('weight/not-found', 'Aucune pesée ce jour-là.');

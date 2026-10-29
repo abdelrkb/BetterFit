@@ -59,7 +59,6 @@ export default function ExerciseLibraryScreen() {
     return () => clearTimeout(timer);
   }, [rawQuery]);
 
-
   const search = useQuery({
     queryKey: ['exercises', { query, muscleGroup, equipment, level, mine, page }],
     queryFn: () =>
@@ -75,11 +74,13 @@ export default function ExerciseLibraryScreen() {
   });
 
   const muscleOptions = useMemo(
-    () => MUSCLE_GROUP_ORDER.map((group) => ({ value: group, label: MUSCLE_GROUP_LABELS_FR[group] })),
+    () =>
+      MUSCLE_GROUP_ORDER.map((group) => ({ value: group, label: MUSCLE_GROUP_LABELS_FR[group] })),
     [],
   );
   const equipmentOptions = useMemo(
-    () => equipmentSchema.options.map((item) => ({ value: item, label: EQUIPMENT_LABELS_FR[item] })),
+    () =>
+      equipmentSchema.options.map((item) => ({ value: item, label: EQUIPMENT_LABELS_FR[item] })),
     [],
   );
   const levelOptions = useMemo(
@@ -151,9 +152,7 @@ export default function ExerciseLibraryScreen() {
           </View>
 
           <Caption>
-            {search.isPending
-              ? t('common.loading')
-              : t('exercises.resultCount', { count: total })}
+            {search.isPending ? t('common.loading') : t('exercises.resultCount', { count: total })}
           </Caption>
         </View>
 
@@ -221,13 +220,7 @@ function ExerciseGrid({
   );
 }
 
-function ExerciseCard({
-  exercise,
-  onPress,
-}: {
-  exercise: ExerciseSummary;
-  onPress: () => void;
-}) {
+function ExerciseCard({ exercise, onPress }: { exercise: ExerciseSummary; onPress: () => void }) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const photo = exercise.images[0];

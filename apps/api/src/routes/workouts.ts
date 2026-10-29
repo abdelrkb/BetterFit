@@ -103,7 +103,9 @@ async function findRecords(
     sets: exercise.sets.filter((set) => set.done && (set.weightKg ?? 0) > 0),
   }));
 
-  const exerciseIds = doneSets.filter((item) => item.sets.length > 0).map((item) => item.exerciseId);
+  const exerciseIds = doneSets
+    .filter((item) => item.sets.length > 0)
+    .map((item) => item.exerciseId);
   if (exerciseIds.length === 0) return [];
 
   const named = await db
@@ -129,7 +131,10 @@ async function findRecords(
     sets.reduce((max, set) => Math.max(max, set.weightKg ?? 0), 0);
 
   const maxOneRepMax = (sets: { weightKg: number | null; reps: number | null }[]) =>
-    sets.reduce((max, set) => Math.max(max, estimateOneRepMax(set.weightKg ?? 0, set.reps ?? 0)), 0);
+    sets.reduce(
+      (max, set) => Math.max(max, estimateOneRepMax(set.weightKg ?? 0, set.reps ?? 0)),
+      0,
+    );
 
   const records: PersonalRecord[] = [];
 
@@ -456,9 +461,7 @@ export const workoutRoutes: FastifyPluginAsyncZod = async (app) => {
       return {
         exercise: exercise ? toExerciseSummary(exercise) : null,
         points,
-        bestWeightKg: points.length
-          ? Math.max(...points.map((point) => point.maxWeightKg))
-          : null,
+        bestWeightKg: points.length ? Math.max(...points.map((point) => point.maxWeightKg)) : null,
         bestOneRepMaxKg: points.length
           ? Math.max(...points.map((point) => point.estimatedOneRepMaxKg))
           : null,

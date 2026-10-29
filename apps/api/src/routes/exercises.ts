@@ -10,7 +10,18 @@ import {
   musclesOfGroup,
   type Muscle,
 } from '@betterfit/shared';
-import { and, arrayOverlaps, asc, count, desc, eq, isNull, or, sql as raw, type SQL } from 'drizzle-orm';
+import {
+  and,
+  arrayOverlaps,
+  asc,
+  count,
+  desc,
+  eq,
+  isNull,
+  or,
+  sql as raw,
+  type SQL,
+} from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { currentUser } from '../auth/plugin.js';
@@ -32,11 +43,7 @@ const SIMILARITY_THRESHOLD = 0.45;
 
 /** Normalise une recherche comme `search_text` : minuscules, sans accents. */
 function normalizeQuery(query: string): string {
-  return query
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim();
+  return query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
 export const exerciseRoutes: FastifyPluginAsyncZod = async (app) => {

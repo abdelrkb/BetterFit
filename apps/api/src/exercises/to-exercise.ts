@@ -1,4 +1,9 @@
-import { exerciseSchema, exerciseSummarySchema, type Exercise, type ExerciseSummary } from '@betterfit/shared';
+import {
+  exerciseSchema,
+  exerciseSummarySchema,
+  type Exercise,
+  type ExerciseSummary,
+} from '@betterfit/shared';
 import type { ExerciseRow } from '../db/schema.js';
 
 /** Adresse publique d'une photo d'exercice. */

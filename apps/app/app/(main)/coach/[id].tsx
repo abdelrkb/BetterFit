@@ -205,7 +205,8 @@ function WeightChart({ points }: { points: WeightPoint[] }) {
   const plotHeight = HEIGHT - PADDING.top - PADDING.bottom;
 
   const x = (index: number) =>
-    PADDING.left + (points.length === 1 ? plotWidth / 2 : (index / (points.length - 1)) * plotWidth);
+    PADDING.left +
+    (points.length === 1 ? plotWidth / 2 : (index / (points.length - 1)) * plotWidth);
   const y = (value: number) => PADDING.top + plotHeight - ((value - bottom) / range) * plotHeight;
 
   const series = [

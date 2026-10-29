@@ -167,10 +167,7 @@ describe('accès refusé', () => {
     expect(refused.statusCode).toBe(403);
 
     // Une fois le droit accordé, la traduction passe.
-    await db
-      .update(users)
-      .set({ canEditLibrary: true })
-      .where(eq(users.email, 'julie@exemple.fr'));
+    await db.update(users).set({ canEditLibrary: true }).where(eq(users.email, 'julie@exemple.fr'));
 
     const allowed = await app.inject({
       method: 'PUT',

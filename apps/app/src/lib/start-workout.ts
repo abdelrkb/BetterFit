@@ -63,7 +63,10 @@ export async function buildLiveWorkout(
 }
 
 async function fetchLastPerformances(exerciseIds: string[]) {
-  const result = new Map<string, { setIndex: number; weightKg: number | null; reps: number | null }[]>();
+  const result = new Map<
+    string,
+    { setIndex: number; weightKg: number | null; reps: number | null }[]
+  >();
 
   if (exerciseIds.length === 0) return result;
 

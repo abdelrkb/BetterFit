@@ -75,7 +75,12 @@ export default function LiveWorkoutScreen() {
           <Heading>{t('workout.noneTitle')}</Heading>
           <Body style={styles.center}>{t('workout.noneBody')}</Body>
         </Card>
-        <Button block variant="ghost" label={t('common.back')} onPress={() => router.replace('/')} />
+        <Button
+          block
+          variant="ghost"
+          label={t('common.back')}
+          onPress={() => router.replace('/')}
+        />
       </Screen>
     );
   }
@@ -128,7 +133,9 @@ export default function LiveWorkoutScreen() {
           <Chip tone="dark" label={t('workout.plannedSets', { count: exercise.plannedSets })} />
           {exercise.reps ? <Chip label={exercise.reps} /> : null}
           {exercise.load ? <Chip tone="outline" label={exercise.load} /> : null}
-          {exercise.tempo ? <Chip tone="outline" label={`${t('training.tempo')} ${exercise.tempo}`} /> : null}
+          {exercise.tempo ? (
+            <Chip tone="outline" label={`${t('training.tempo')} ${exercise.tempo}`} />
+          ) : null}
         </View>
         {exercise.notes.length > 0 ? <Body>{exercise.notes}</Body> : null}
         {exercise.lastSets.length > 0 ? (

@@ -5,17 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { ProgressChart } from '@/components/ProgressChart';
 import { errorMessage } from '@/lib/errors';
 import { fetchProgress } from '@/lib/workouts';
-import {
-  Banner,
-  Button,
-  Caption,
-  Card,
-  Metric,
-  Screen,
-  Title,
-  colors,
-  spacing,
-} from '@/ui';
+import { Banner, Button, Caption, Card, Metric, Screen, Title, colors, spacing } from '@/ui';
 
 export default function ProgressScreen() {
   const { t } = useTranslation();
@@ -58,7 +48,9 @@ export default function ProgressScreen() {
             <Caption>{t('progress.bestWeight')}</Caption>
           </View>
           <View style={styles.metric}>
-            <Metric>{data.bestOneRepMaxKg === null ? '—' : Math.round(data.bestOneRepMaxKg)}</Metric>
+            <Metric>
+              {data.bestOneRepMaxKg === null ? '—' : Math.round(data.bestOneRepMaxKg)}
+            </Metric>
             <Caption>{t('progress.bestOneRepMax')}</Caption>
           </View>
           <View style={styles.metric}>

@@ -37,7 +37,9 @@ import { toExerciseSummary } from '../exercises/to-exercise.js';
 
 export async function loadProgram(programId: string): Promise<Program | null> {
   const [program] = await db.select().from(programs).where(eq(programs.id, programId));
-  if (!program) return null;
+  // Un programme de nutrition se lit par ses propres routes : le renvoyer ici
+  // le ferait apparaître sans séances dans l'onglet Entraînement.
+  if (!program || program.kind !== 'training') return null;
 
   const [details] = await db
     .select()
@@ -187,7 +189,9 @@ export async function writeContents(
 /** Vérifie que tous les exercices cités existent et sont visibles par l'auteur. */
 export async function assertExercisesVisible(userId: string, input: ProgramInput): Promise<void> {
   const ids = [
-    ...new Set(input.sessions.flatMap((session) => session.exercises.map((line) => line.exerciseId))),
+    ...new Set(
+      input.sessions.flatMap((session) => session.exercises.map((line) => line.exerciseId)),
+    ),
   ];
 
   if (ids.length === 0) return;
@@ -235,7 +239,8 @@ export const programRoutes: FastifyPluginAsyncZod = async (app) => {
           and(
             // Ses propres programmes, et ceux qu'un coach lui a assignés.
             or(eq(programs.ownerId, user.id), eq(programs.assignedToUserId, user.id)),
-            kind ? eq(programs.kind, kind) : undefined,
+            // Par défaut, la musculation : c'est cette route qui la sert.
+            eq(programs.kind, kind ?? 'training'),
             templates === undefined ? undefined : eq(programs.isTemplate, templates),
           ),
         )

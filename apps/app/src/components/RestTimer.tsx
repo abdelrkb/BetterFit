@@ -42,9 +42,11 @@ export function RestTimer({ seconds, startedAt, onDone }: RestTimerProps) {
    * série qui l'a lancé : une nouvelle série repart donc à zéro sans qu'on ait
    * à remettre un état à jour dans un effet.
    */
-  const [tweaks, setTweaks] = useState<{ forStart: number | null; bonus: number; skipped: boolean }>(
-    { forStart: null, bonus: 0, skipped: false },
-  );
+  const [tweaks, setTweaks] = useState<{
+    forStart: number | null;
+    bonus: number;
+    skipped: boolean;
+  }>({ forStart: null, bonus: 0, skipped: false });
   const [now, setNow] = useState(() => Date.now());
   const announced = useRef<number | null>(null);
 
@@ -67,8 +69,7 @@ export function RestTimer({ seconds, startedAt, onDone }: RestTimerProps) {
   }, [beep]);
 
   const total = seconds + current.bonus;
-  const endsAt =
-    startedAt === null ? null : current.skipped ? startedAt : startedAt + total * 1000;
+  const endsAt = startedAt === null ? null : current.skipped ? startedAt : startedAt + total * 1000;
 
   const remaining = endsAt === null ? seconds : Math.max(0, Math.ceil((endsAt - now) / 1000));
 

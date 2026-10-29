@@ -8,11 +8,14 @@ import {
 import { useSession } from '../stores/session';
 
 export function listPrograms(options: { templates?: boolean } = {}): Promise<ProgramList> {
-  const query = options.templates === undefined ? '' : `?templates=${options.templates}`;
+  // `kind` explicite : sans lui, les programmes de nutrition remonteraient
+  // dans l'onglet Entraînement.
+  const query = new URLSearchParams({ kind: 'training' });
+  if (options.templates !== undefined) query.set('templates', String(options.templates));
 
   return useSession
     .getState()
-    .authedRequest(`/programs${query}`, {}, (data) => programListSchema.parse(data));
+    .authedRequest(`/programs?${query.toString()}`, {}, (data) => programListSchema.parse(data));
 }
 
 export function fetchProgram(id: string): Promise<Program> {

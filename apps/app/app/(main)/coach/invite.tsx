@@ -54,9 +54,11 @@ export default function InviteScreen() {
       await queryClient.invalidateQueries({ queryKey: ['coach', 'invitations'] });
     },
     onError: (caught) =>
-      setError(caught instanceof Error && caught.message === 'email'
-        ? t('coach.invalidEmail')
-        : errorMessage(caught)),
+      setError(
+        caught instanceof Error && caught.message === 'email'
+          ? t('coach.invalidEmail')
+          : errorMessage(caught),
+      ),
   });
 
   const cancel = useMutation({
@@ -124,8 +126,7 @@ export default function InviteScreen() {
                   {invitation.code ?? invitation.targetName ?? invitation.email}
                 </Body>
                 <Caption>
-                  {t(`coach.kind.${invitation.kind}`)} ·{' '}
-                  {t(`coach.status.${invitation.status}`)}
+                  {t(`coach.kind.${invitation.kind}`)} · {t(`coach.status.${invitation.status}`)}
                 </Caption>
               </View>
               <Chip
