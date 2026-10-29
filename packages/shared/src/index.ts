@@ -4,6 +4,7 @@ export * from './constants.js';
 export * from './exercises.js';
 export * from './foods.js';
 export * from './health.js';
+export * from './journal.js';
 export * from './nutrition-program.js';
 export * from './nutrition.js';
 export * from './prices.js';

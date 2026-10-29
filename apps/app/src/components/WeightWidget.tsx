@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { WeightChart } from '@/components/WeightChart';
 import { errorMessage } from '@/lib/errors';
 import { decimal } from '@/lib/format';
 import { fetchWeightHistory, saveWeight } from '@/lib/weight';
@@ -108,6 +109,12 @@ export function WeightWidget() {
           </View>
         </View>
       )}
+
+      {/* La courbe n'apparaît qu'à partir de deux pesées : une seule ne
+          dessine rien d'utile. */}
+      {!editing && (history.data?.points.length ?? 0) >= 2 ? (
+        <WeightChart points={history.data!.points} />
+      ) : null}
 
       {editing ? null : (
         <Button

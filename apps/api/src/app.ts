@@ -20,6 +20,7 @@ import { programRoutes } from './routes/programs.js';
 import { workoutRoutes } from './routes/workouts.js';
 import { foodRoutes } from './routes/foods.js';
 import { healthRoutes } from './routes/health.js';
+import { journalRoutes } from './routes/journal.js';
 import { meRoutes } from './routes/me.js';
 import { nutritionRoutes } from './routes/nutrition.js';
 import { recipeRoutes } from './routes/recipes.js';
@@ -117,6 +118,7 @@ export async function buildApp() {
   await app.register(nutritionRoutes, { prefix: API_PREFIX });
   await app.register(recipeRoutes, { prefix: API_PREFIX });
   await app.register(foodRoutes, { prefix: API_PREFIX });
+  await app.register(journalRoutes, { prefix: API_PREFIX });
 
   return app;
 }

@@ -87,11 +87,18 @@ export default function NutritionScreen() {
           </>
         )}
 
+        <Button
+          block
+          label={t('nutrition.openJournal')}
+          onPress={() => router.push('/nutrition/journal')}
+        />
+
         <Card tone="soft" style={styles.empty}>
           <Mascot pose="stand" size={96} />
           <Body style={styles.center}>{t('nutrition.noPlanBody')}</Body>
           <Button
             block
+            variant="secondary"
             label={t('nutrition.createPlan')}
             onPress={() => router.push('/nutrition/edit')}
           />
@@ -109,6 +116,12 @@ export default function NutritionScreen() {
       {mine ? null : <Caption>{t('nutrition.fromCoach')}</Caption>}
 
       {plan.settings.goalTitle.length > 0 ? <Body>{plan.settings.goalTitle}</Body> : null}
+
+      <Button
+        block
+        label={t('nutrition.openJournal')}
+        onPress={() => router.push('/nutrition/journal')}
+      />
 
       <Tabs
         value={view}

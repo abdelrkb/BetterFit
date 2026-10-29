@@ -160,7 +160,8 @@
     "ringPlannedLeft": "kcal à répartir",
     "ringPlannedOver": "kcal de trop",
     "ringDetailPlanned": "{{consumed}} kcal prévues sur {{target}}",
-    "ringLabelPlanned": "Anneau du plan : {{consumed}} kcal prévues sur une cible de {{target}}."
+    "ringLabelPlanned": "Anneau du plan : {{consumed}} kcal prévues sur une cible de {{target}}.",
+    "openJournal": "Noter ce que j’ai mangé"
   },
   "profile": {
     "title": "Mon profil",
@@ -689,7 +690,8 @@
     "addCategory": "Ajouter un rayon",
     "removeCategory": "Retirer ce rayon",
     "addFromDatabase": "Choisir dans la base",
-    "openFoods": "Mes aliments"
+    "openFoods": "Mes aliments",
+    "openJournal": "Mon journal"
   },
   "deficit": {
     "bmrHint": "Ce que ton corps brûle au repos, rien qu’à exister.",
@@ -787,5 +789,55 @@
     "servingPlaceholder": "une barre",
     "servingGramsLabel": "Poids d’une portion",
     "delete": "Supprimer cet aliment"
+  },
+  "journal": {
+    "title": "Mon journal",
+    "today": "Aujourd'hui",
+    "previousDay": "‹ Veille",
+    "nextDay": "Lendemain ›",
+    "dayOverline": "Ta journée",
+    "dayTitle": "Ce que tu as mangé",
+    "noTarget": "Renseigne ta taille, ton âge et ton poids pour voir un objectif. En attendant, tu peux déjà noter ce que tu manges.",
+    "eatenOnly": "{{kcal}} kcal aujourd’hui.",
+    "fromProgram": "Objectif de ton programme alimentaire.",
+    "fromProfile": "Objectif calculé depuis ton profil.",
+    "macroTotals": "{{protein}} g de protéines · {{carbs}} g de glucides · {{fat}} g de lipides",
+    "nothingYet": "Rien pour l’instant.",
+    "kcal": "{{kcal}} kcal",
+    "removeEntry": "Retirer {{name}}",
+    "search": "Chercher",
+    "scan": "Scanner",
+    "quick": "Vite fait",
+    "copyYesterday": "Recopier la journée d’hier",
+    "recentsTitle": "Tes habitudes",
+    "recentsHint": "Touche pour reloguer en collation.",
+    "looking": "Recherche du produit…",
+    "scanTitle": "Scanner un produit",
+    "scanWeb": "Sur ordinateur, saisis le code à la main : c’est écrit sous le code-barres de l’emballage.",
+    "scanPermission": "BetterFit a besoin de la caméra pour lire le code-barres.",
+    "scanAllow": "Autoriser la caméra",
+    "scanUnreadable": "Ce code ne ressemble pas à un code-barres alimentaire.",
+    "scanManualTitle": "Ou saisis le code",
+    "scanManualHint": "Les chiffres sous le code-barres, 8 à 14 chiffres.",
+    "barcodeLabel": "Code-barres",
+    "scanLookup": "Chercher ce code",
+    "scanNotFound": "Produit inconnu d’Open Food Facts. Saisis-le vite fait, il sera à toi.",
+    "quickTitle": "Saisie rapide",
+    "quickSubtitle": "Pour ce qui n’est dans aucune base : un plat du restaurant, une part de gâteau.",
+    "quickLabel": "Qu’as-tu mangé ?",
+    "quickPlaceholder": "Pizza du resto",
+    "quickKcal": "Calories (si tu les connais)",
+    "quickMacrosHint": "Les macros sont facultatives : mieux vaut une ligne approximative que pas de ligne du tout.",
+    "quickSuggested": "D’après tes macros, ça ferait environ {{kcal}} kcal.",
+    "quickAdd": "Ajouter"
+  },
+  "weight": {
+    "chartEmpty": "Pas encore assez de pesées pour tracer une courbe.",
+    "chartLabel": "Courbe de ton poids et de sa tendance sur sept jours.",
+    "trendSeries": "Tendance 7 jours",
+    "weighInSeries": "Pesées",
+    "showTable": "Voir les chiffres",
+    "hideTable": "Masquer les chiffres",
+    "tableDate": "Date"
   }
 }

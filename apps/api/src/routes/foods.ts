@@ -5,6 +5,7 @@ import {
   foodListSchema,
   foodSchema,
   foodSearchSchema,
+  openFoodFactsProductSchema,
 } from '@betterfit/shared';
 import { and, asc, count, desc, eq, isNull, or, sql as raw, type SQL } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -147,6 +148,74 @@ export const foodRoutes: FastifyPluginAsyncZod = async (app) => {
         .limit(1);
 
       if (!row) throw notFound('food/not-found', 'Produit inconnu.');
+
+      return toFood(row);
+    },
+  );
+
+  /**
+   * Met en cache un produit lu par l'appareil sur Open Food Facts.
+   *
+   * C'est l'appareil qui interroge Open Food Facts, pas notre serveur : ils
+   * limitent à une quinzaine de lectures par minute et par IP, et toutes nos
+   * requêtes partiraient de la même. L'app nous envoie ensuite la fiche, et
+   * la prochaine personne qui scanne le même code la trouve chez nous.
+   *
+   * Le produit est **partagé** (`ownerId` nul) : un code-barres désigne le
+   * même produit pour tout le monde. Données sous licence ODbL, attribuées
+   * dans l'app.
+   */
+  app.post(
+    '/foods/off',
+    { schema: { body: openFoodFactsProductSchema, response: { 200: foodSchema } } },
+    async (request) => {
+      const input = request.body;
+
+      const [row] = await db
+        .insert(foods)
+        .values({
+          source: 'off',
+          ownerId: null,
+          externalId: input.barcode,
+          barcode: input.barcode,
+          name: input.name,
+          brand: input.brand,
+          category: input.category,
+          kcal: input.kcal,
+          proteinG: input.proteinG,
+          carbsG: input.carbsG,
+          sugarsG: input.sugarsG,
+          fatG: input.fatG,
+          saturatedFatG: input.saturatedFatG,
+          fiberG: input.fiberG,
+          saltG: input.saltG,
+          servingLabel: input.servingLabel,
+          servingG: input.servingG,
+          searchText: buildFoodSearchText(input),
+        })
+        .onConflictDoUpdate({
+          target: [foods.source, foods.externalId],
+          set: {
+            name: input.name,
+            brand: input.brand,
+            category: input.category,
+            kcal: input.kcal,
+            proteinG: input.proteinG,
+            carbsG: input.carbsG,
+            sugarsG: input.sugarsG,
+            fatG: input.fatG,
+            saturatedFatG: input.saturatedFatG,
+            fiberG: input.fiberG,
+            saltG: input.saltG,
+            servingLabel: input.servingLabel,
+            servingG: input.servingG,
+            searchText: buildFoodSearchText(input),
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      if (!row) throw notFound('food/save-failed', 'Mise en cache impossible.');
 
       return toFood(row);
     },

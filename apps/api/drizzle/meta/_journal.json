@@ -29,6 +29,13 @@
       "when": 1793287275648,
       "tag": "0003_violet_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793298295466,
+      "tag": "0004_premium_bloodscream",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "product": {
+    "code": "3017620422003",
+    "product_name": "Nutella",
+    "product_name_fr": "Nutella",
+    "brands": "Nutella, Ferrero",
+    "categories": "Snacks, Cocoa powders, Confectionary based spreads, Hazelnutx, Petit-déjeuners, Produits à tartiner, Produits à tartiner sucrés, Pâtes à tartiner, fr:Goûter, fr:Nutella, fr:Nuttela",
+    "nutriments": {
+      "energy-kcal_100g": 539,
+      "proteins_100g": 6.3,
+      "carbohydrates_100g": 57.5,
+      "sugars_100g": 56.3,
+      "fat_100g": 30.9,
+      "saturated-fat_100g": 10.6,
+      "fiber_100g": 0,
+      "salt_100g": 0.107,
+      "sodium_100g": 0.0428
+    }
+  }
+}

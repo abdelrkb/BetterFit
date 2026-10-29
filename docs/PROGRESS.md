@@ -299,6 +299,35 @@ En cas de rechute ailleurs : rapatrier les fichiers hors du bac à sable, par ex
 - Les libellés des poses (« Squat », « Soulevé de terre ») sont stockés dans
   `packages/mascot`, pas dans `locales/fr.json`. À reprendre le jour où l'anglais arrivera.
 
+## Décisions de l'étape 9 — Journal alimentaire
+- **Les valeurs sont figées à la saisie.** On recopie calories et macros au moment où on
+  logue, au lieu de les recalculer à l'affichage. Si un aliment perso est corrigé, ou si une
+  nouvelle table Ciqual change un chiffre, les journées passées ne bougent pas : on ne
+  réécrit pas l'histoire de ce que quelqu'un a mangé. Un test le vérifie en modifiant
+  l'aliment après coup.
+- **Le journal fonctionne sans programme.** Les cibles viennent du programme de nutrition
+  actif s'il y en a un, du profil sinon, et le journal reste utilisable même sans cible du
+  tout : on peut noter ce qu'on mange avant d'avoir un objectif.
+- **Le serveur recalcule les valeurs d'une ligne qui cite un aliment.** Ce que l'app envoie
+  est ignoré dans ce cas : un client modifié ne doit pas pouvoir annoncer 5 kcal pour 160 g
+  de riz.
+- **Open Food Facts est interrogé depuis l'appareil, jamais depuis notre serveur.** Ils
+  limitent à une quinzaine de lectures par minute et par IP : toutes nos requêtes partiraient
+  de la même adresse, et quelques utilisateurs suffiraient à bloquer tout le monde. Le
+  produit trouvé est ensuite mis en cache chez nous, partagé (un code-barres désigne le même
+  produit pour tout le monde), avec l'attribution ODbL.
+- **On cherche d'abord dans notre cache** avant d'interroger Open Food Facts : un produit
+  déjà scanné par quelqu'un d'autre ne les dérange pas une deuxième fois.
+- **La saisie rapide n'exige qu'un nom.** Les calories et les macros sont facultatives :
+  exiger les macros ferait renoncer à loguer le plat du restaurant, et une journée non
+  remplie vaut moins qu'une journée approximative.
+- **On n'arrondit pas les valeurs à l'ingestion.** Une première version arrondissait à deux
+  décimales et transformait 0,107 g de sel en 0,11. C'est à l'affichage d'arrondir.
+- **Le scan propose toujours la saisie manuelle du code**, et pas seulement sur le web :
+  emballage abîmé, code illisible, caméra refusée.
+- **La courbe de poids montre la tendance en trait plein et les pesées en points**, sur un
+  seul axe. La courbe n'apparaît qu'à partir de deux pesées.
+
 ## À reprendre plus tard
 - **DETTE — Ciqual importé depuis un miroir, pas depuis la source officielle.**
   Le 29 octobre 2026, le site de l'ANSES était en maintenance (503). Sur décision du

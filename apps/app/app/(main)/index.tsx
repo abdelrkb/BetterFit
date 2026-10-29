@@ -1,4 +1,7 @@
 import { Mascot } from '@betterfit/mascot';
+import { today } from '@betterfit/shared';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { CalorieRing } from '@/components/CalorieRing';
@@ -6,9 +9,10 @@ import { CoachingCard } from '@/components/CoachingCard';
 import { RecentWorkouts } from '@/components/RecentWorkouts';
 import { TodaySessionCard } from '@/components/TodaySessionCard';
 import { WeightWidget } from '@/components/WeightWidget';
+import { fetchJournalDay } from '@/lib/journal';
 import { useDailyTargets } from '@/lib/use-daily-targets';
 import { useSession } from '@/stores/session';
-import { Body, Card, HeroCard, Logo, Screen, Title, spacing, useWideScreen } from '@/ui';
+import { Body, Button, Card, HeroCard, Logo, Screen, Title, spacing, useWideScreen } from '@/ui';
 
 /**
  * L'accueil : où j'en suis aujourd'hui.
@@ -19,8 +23,17 @@ import { Body, Card, HeroCard, Logo, Screen, Title, spacing, useWideScreen } fro
 export default function HomeScreen() {
   const { t } = useTranslation();
   const user = useSession((state) => state.user);
+  const router = useRouter();
   const wide = useWideScreen();
-  const targets = useDailyTargets();
+  const profileTargets = useDailyTargets();
+
+  // Le journal du jour donne les deux chiffres de l'anneau : la cible (celle
+  // du programme s'il y en a un) et ce qui a déjà été mangé.
+  const date = today();
+  const journal = useQuery({ queryKey: ['journal', date], queryFn: () => fetchJournalDay(date) });
+
+  const targets = journal.data?.targets ?? profileTargets;
+  const eatenKcal = journal.data?.totals.kcal ?? 0;
 
   return (
     <Screen>
@@ -45,8 +58,15 @@ export default function HomeScreen() {
             {targets === null ? (
               <Body>{t('home.caloriesNoProfile')}</Body>
             ) : (
-              <CalorieRing targetKcal={targets.targetKcal} consumedKcal={0} />
+              <CalorieRing targetKcal={targets.targetKcal} consumedKcal={eatenKcal} />
             )}
+
+            <Button
+              block
+              variant="secondary"
+              label={t('home.openJournal')}
+              onPress={() => router.push('/nutrition/journal')}
+            />
           </Card>
 
           <WeightWidget />

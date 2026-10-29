@@ -936,3 +936,76 @@ export const foodsRelations = relations(foods, ({ one }) => ({
 }));
 
 export type FoodRow = typeof foods.$inferSelect;
+
+/* ------------------------------------------------------------------ */
+/* Journal alimentaire (étape 9)                                        */
+/* ------------------------------------------------------------------ */
+
+/** Les quatre moments de la journée. */
+export const mealSlot = pgEnum('meal_slot', ['breakfast', 'lunch', 'dinner', 'snack']);
+
+/**
+ * Une ligne du journal : ce qu'on a mangé, quel jour, à quel moment.
+ *
+ * Les valeurs nutritionnelles sont **figées** à la saisie, recopiées depuis
+ * l'aliment. Si quelqu'un corrige ensuite son aliment perso, ou si une
+ * nouvelle table Ciqual change un chiffre, les journées déjà passées ne
+ * doivent pas bouger : on ne réécrit pas l'histoire de ce que quelqu'un a
+ * mangé. `foodId` ne sert donc qu'à retrouver l'aliment, jamais à recalculer.
+ */
+export const foodLogs = pgTable(
+  'food_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    slot: mealSlot('slot').notNull(),
+    position: smallint('position').notNull().default(0),
+
+    /** L'aliment d'origine, s'il vient de la base. `null` en saisie rapide. */
+    foodId: uuid('food_id').references(() => foods.id, { onDelete: 'set null' }),
+    label: text('label').notNull(),
+    quantityG: real('quantity_g'),
+    /** Ce qu'on a tapé : « 160 g », « une barre ». */
+    quantityText: text('quantity_text').notNull().default(''),
+
+    /** Valeurs figées, pour la quantité mangée (pas pour 100 g). */
+    kcal: real('kcal'),
+    proteinG: real('protein_g'),
+    carbsG: real('carbs_g'),
+    fatG: real('fat_g'),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('food_logs_user_date_idx').on(table.userId, table.date),
+    index('food_logs_user_food_idx').on(table.userId, table.foodId),
+  ],
+);
+
+/** Les aliments mis en favori, pour les retrouver en un geste. */
+export const foodFavorites = pgTable(
+  'food_favorites',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    foodId: uuid('food_id')
+      .notNull()
+      .references(() => foods.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('food_favorites_unique').on(table.userId, table.foodId),
+    index('food_favorites_user_idx').on(table.userId),
+  ],
+);
+
+export const foodLogsRelations = relations(foodLogs, ({ one }) => ({
+  user: one(users, { fields: [foodLogs.userId], references: [users.id] }),
+  food: one(foods, { fields: [foodLogs.foodId], references: [foods.id] }),
+}));
+
+export type FoodLogRow = typeof foodLogs.$inferSelect;

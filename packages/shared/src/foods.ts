@@ -162,3 +162,109 @@ export function gramsFromText(text: string): number | null {
       return value;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Open Food Facts                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ce qu'on retient d'un produit lu sur Open Food Facts.
+ *
+ * L'appel se fait **depuis l'appareil** de la personne, jamais depuis notre
+ * serveur : Open Food Facts limite à une quinzaine de lectures par minute et
+ * par IP, et toutes nos requêtes partiraient de la même. Le produit est
+ * ensuite envoyé ici pour être mis en cache, et la prochaine personne qui
+ * scanne le même code le trouve chez nous.
+ */
+export const openFoodFactsProductSchema = nutrientsSchema.extend({
+  barcode: z.string().trim().regex(/^\d{8,14}$/),
+  name: z.string().trim().min(1).max(200),
+  brand: z.string().trim().max(120).default(''),
+  category: z.string().trim().max(200).default(''),
+  servingLabel: z.string().trim().max(60).default(''),
+  servingG: z.number().min(1).max(5000).nullable().default(null),
+});
+export type OpenFoodFactsProduct = z.infer<typeof openFoodFactsProductSchema>;
+
+/** L'adresse à interroger pour un code-barres. */
+export function openFoodFactsUrl(barcode: string): string {
+  // On ne demande que les champs utiles : la fiche complète pèse plusieurs
+  // centaines de kilo-octets, souvent sur un réseau de téléphone.
+  const fields = [
+    'code',
+    'product_name',
+    'product_name_fr',
+    'brands',
+    'categories',
+    'serving_size',
+    'serving_quantity',
+    'nutriments',
+  ].join(',');
+
+  return `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`;
+}
+
+/**
+ * L'en-tête que leur documentation demande : nom de l'app, version, contact.
+ * Sans lui, Open Food Facts bloque les appels anonymes.
+ */
+export function openFoodFactsUserAgent(version: string, contactEmail: string): string {
+  return `BetterFit/${version} (${contactEmail})`;
+}
+
+/**
+ * Convertit une fiche Open Food Facts en aliment.
+ *
+ * Leurs valeurs sont pour 100 g, comme les nôtres. Le sel est donné en sodium
+ * dans certaines fiches : on préfère `salt_100g` quand il existe, sinon on le
+ * reconstitue (1 g de sodium ≈ 2,5 g de sel).
+ *
+ * Rend `null` si la fiche n'a même pas de nom : mieux vaut proposer une
+ * saisie rapide que d'enregistrer un produit vide.
+ */
+export function fromOpenFoodFacts(payload: unknown): OpenFoodFactsProduct | null {
+  const product = (payload as { product?: Record<string, unknown> } | null)?.product;
+  if (!product) return null;
+
+  const name = str(product.product_name_fr) || str(product.product_name);
+  const barcode = str(product.code);
+
+  if (name.length === 0 || !/^\d{8,14}$/.test(barcode)) return null;
+
+  const nutriments = (product.nutriments ?? {}) as Record<string, unknown>;
+  const sodium = num(nutriments['sodium_100g']);
+
+  return openFoodFactsProductSchema.parse({
+    barcode,
+    name: name.slice(0, 200),
+    brand: str(product.brands).split(',')[0]?.trim().slice(0, 120) ?? '',
+    category: str(product.categories).split(',').slice(-1)[0]?.trim().slice(0, 200) ?? '',
+    servingLabel: str(product.serving_size).slice(0, 60),
+    servingG: num(product.serving_quantity),
+    kcal: num(nutriments['energy-kcal_100g']),
+    proteinG: num(nutriments['proteins_100g']),
+    carbsG: num(nutriments['carbohydrates_100g']),
+    sugarsG: num(nutriments['sugars_100g']),
+    fatG: num(nutriments['fat_100g']),
+    saturatedFatG: num(nutriments['saturated-fat_100g']),
+    fiberG: num(nutriments['fiber_100g']),
+    saltG: num(nutriments['salt_100g']) ?? (sodium === null ? null : sodium * 2.5),
+  });
+}
+
+function str(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * Un nombre utilisable, ou `null`.
+ *
+ * Open Food Facts écrit parfois des textes, et parfois des valeurs
+ * négatives qui n'ont aucun sens. On ne **n'arrondit pas** : le sel vaut
+ * 0,107 g pour 100 g sur certaines fiches, et l'arrondir à 0,11 perdrait de
+ * la précision sans rien apporter. C'est à l'affichage d'arrondir.
+ */
+function num(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}

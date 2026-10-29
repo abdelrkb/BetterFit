@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildFoodSearchText, gramsFromText, macrosForFood } from './foods.js';
+import nutella from './__fixtures__/off-nutella.json' with { type: 'json' };
+import {
+  buildFoodSearchText,
+  fromOpenFoodFacts,
+  gramsFromText,
+  macrosForFood,
+} from './foods.js';
 
 const emptyNutrients = {
   kcal: null,
@@ -83,5 +89,79 @@ describe('buildFoodSearchText', () => {
 
     expect(text).toContain('danone');
     expect(text).toContain('produits laitiers');
+  });
+});
+
+describe('fromOpenFoodFacts', () => {
+  it('convertit une vraie fiche', () => {
+    // Fixture réduite d'un appel réel à Open Food Facts (Nutella).
+    const product = fromOpenFoodFacts(nutella);
+
+    expect(product).not.toBeNull();
+    expect(product!.name).toBe('Nutella');
+    expect(product!.barcode).toBe('3017620422003');
+    expect(product!.kcal).toBe(539);
+    expect(product!.proteinG).toBeCloseTo(6.3, 1);
+    expect(product!.fatG).toBeCloseTo(30.9, 1);
+  });
+
+  it('ne garde que la première marque', () => {
+    // La fiche dit « Nutella, Ferrero » : afficher les deux est illisible.
+    expect(fromOpenFoodFacts(nutella)!.brand).toBe('Nutella');
+  });
+
+  it('préfère le sel annoncé au sodium reconstitué', () => {
+    expect(fromOpenFoodFacts(nutella)!.saltG).toBeCloseTo(0.107, 3);
+  });
+
+  it('reconstitue le sel depuis le sodium quand il manque', () => {
+    const withoutSalt = {
+      product: {
+        code: '1234567890123',
+        product_name: 'Produit sans sel annoncé',
+        nutriments: { sodium_100g: 0.4 },
+      },
+    };
+
+    // 0,4 g de sodium ≈ 1 g de sel.
+    expect(fromOpenFoodFacts(withoutSalt)!.saltG).toBeCloseTo(1, 2);
+  });
+
+  it('refuse une fiche sans nom', () => {
+    expect(fromOpenFoodFacts({ product: { code: '1234567890123' } })).toBeNull();
+  });
+
+  it('refuse une réponse vide', () => {
+    // Open Food Facts répond 200 avec `status: 0` pour un code inconnu.
+    expect(fromOpenFoodFacts({ status: 0 })).toBeNull();
+    expect(fromOpenFoodFacts(null)).toBeNull();
+  });
+
+  it('ignore une valeur nutritionnelle illisible', () => {
+    const odd = {
+      product: {
+        code: '1234567890123',
+        product_name: 'Produit bizarre',
+        nutriments: { 'energy-kcal_100g': 'beaucoup', proteins_100g: -5 },
+      },
+    };
+
+    const product = fromOpenFoodFacts(odd)!;
+    expect(product.kcal).toBeNull();
+    // Une valeur négative n'a aucun sens : on la jette plutôt que de la garder.
+    expect(product.proteinG).toBeNull();
+  });
+
+  it('préfère le nom français quand il existe', () => {
+    const bilingual = {
+      product: {
+        code: '1234567890123',
+        product_name: 'Chocolate spread',
+        product_name_fr: 'Pâte à tartiner',
+        nutriments: {},
+      },
+    };
+
+    expect(fromOpenFoodFacts(bilingual)!.name).toBe('Pâte à tartiner');
   });
 });
