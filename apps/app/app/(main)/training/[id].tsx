@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/lib/errors';
+import { openProgramPdf } from '@/lib/pdf';
 import { deleteProgram, duplicateProgram, fetchProgram } from '@/lib/programs';
 import {
   Banner,
@@ -179,6 +180,14 @@ export default function ProgramScreen() {
         block
         label={t('training.edit')}
         onPress={() => router.push(`/training/edit?id=${item.id}`)}
+      />
+      <Button
+        block
+        variant="secondary"
+        label={t('training.exportPdf')}
+        onPress={() => {
+          void openProgramPdf('training', item.id);
+        }}
       />
       <Button
         block

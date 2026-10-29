@@ -11,6 +11,7 @@ import { DeficitPage } from '@/components/nutrition/DeficitPage';
 import { ShoppingList } from '@/components/nutrition/ShoppingList';
 import { errorMessage } from '@/lib/errors';
 import { fetchNutritionProgram, listNutritionPrograms } from '@/lib/nutrition';
+import { openProgramPdf } from '@/lib/pdf';
 import { useDailyTargets } from '@/lib/use-daily-targets';
 import { useSession } from '@/stores/session';
 import { Banner, Body, Button, Card, Caption, Screen, Tabs, Title, colors, spacing } from '@/ui';
@@ -136,6 +137,15 @@ export default function NutritionScreen() {
       {view === 'day' ? <DayPlan program={plan} /> : null}
       {view === 'shopping' ? <ShoppingList program={plan} /> : null}
       {view === 'deficit' ? <DeficitPage targets={plan.targets} /> : null}
+
+      <Button
+        block
+        variant="secondary"
+        label={t('nutrition.exportPdf')}
+        onPress={() => {
+          void openProgramPdf('nutrition', plan.id);
+        }}
+      />
 
       {/* Un plan reçu d'un coach se consulte, il ne se modifie pas. */}
       {mine ? (

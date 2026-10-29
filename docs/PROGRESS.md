@@ -299,6 +299,28 @@ En cas de rechute ailleurs : rapatrier les fichiers hors du bac à sable, par ex
 - Les libellés des poses (« Squat », « Soulevé de terre ») sont stockés dans
   `packages/mascot`, pas dans `locales/fr.json`. À reprendre le jour où l'anglais arrivera.
 
+## Décisions de l'étape 10 — PDF
+- **Les PDF sont générés à la demande, jamais stockés.** Un programme modifié doit sortir à
+  jour, et garder des documents périmés sur le disque ne rendrait service à personne.
+- **Le lien vers un PDF est signé et expire en dix minutes.** Ni un lecteur PDF ni la feuille
+  de partage d'un téléphone ne savent envoyer un en-tête `Authorization`. La signature
+  couvre le programme, **le demandeur** et les pages choisies : un lien transmis ne donne pas
+  plus de droits que n'en avait celui qui l'a demandé, et changer l'identifiant dans
+  l'adresse l'invalide. Un test couvre exactement ce détournement.
+- **Le droit est vérifié avant de signer**, pas seulement au moment de servir le document.
+- **Une page par séance** dans le PDF de musculation : c'est ce qu'on emporte en salle, et
+  une séance coupée en deux pages serait inutilisable.
+- **Une couleur d'accent hors de la liste est refusée** : elle vient d'une donnée stockée et
+  ne doit pas pouvoir s'injecter dans la feuille de style du document.
+- **La couleur des macros n'habille jamais le texte.** La première version écrivait « 59 g »
+  en lilas sur fond violet pâle, très en dessous du contraste de 4,5:1. La couleur est
+  maintenant une barre d'identification, et le chiffre reste en encre.
+- **Le Chromium de Playwright est démarré une fois et réutilisé** : son lancement coûte près
+  d'une seconde, qu'un coach exportant plusieurs programmes ne doit pas payer à chaque fois.
+  Il est fermé à l'arrêt du serveur.
+- **`pnpm --filter @betterfit/api pdf:sample <dossier> --png`** produit deux documents
+  d'exemple et leurs images : on regarde la mise en page sans créer de compte.
+
 ## Décisions de l'étape 9 — Journal alimentaire
 - **Les valeurs sont figées à la saisie.** On recopie calories et macros au moment où on
   logue, au lieu de les recalculer à l'affichage. Si un aliment perso est corrigé, ou si une

@@ -54,6 +54,19 @@ export const chartGrid = '#E6DDF7';
 /** Couleurs d'accent proposées au coach pour ses PDF (voir `DESIGN.md`). */
 export const accentChoices = ['#6B3FD9', '#8B5CF6', '#A21CAF', '#4C1D95'] as const;
 
+/**
+ * Les trois couleurs des macronutriments, dans cet ordre.
+ *
+ * Partagées entre l'app et les PDF : un client qui regarde son PDF puis son
+ * téléphone doit retrouver les mêmes couleurs. Du plus soutenu au plus clair,
+ * ce qui suit l'ordre d'importance protéines, glucides, lipides.
+ */
+export const MACRO_PDF_COLORS = {
+  protein: '#6B3FD9',
+  carbs: '#8F6BEA',
+  fat: '#C4ADFF',
+} as const;
+
 export const radii = {
   /** Tuiles et pastilles. */
   tile: 14,

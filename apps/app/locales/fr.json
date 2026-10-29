@@ -379,7 +379,8 @@
     "duplicate": "Dupliquer",
     "delete": "Supprimer ce programme",
     "openExercises": "Parcourir les exercices",
-    "openHistory": "Mes séances et ma progression"
+    "openHistory": "Mes séances et ma progression",
+    "exportPdf": "Exporter en PDF"
   },
   "workout": {
     "todayTitle": "La séance du jour",
@@ -691,7 +692,8 @@
     "removeCategory": "Retirer ce rayon",
     "addFromDatabase": "Choisir dans la base",
     "openFoods": "Mes aliments",
-    "openJournal": "Mon journal"
+    "openJournal": "Mon journal",
+    "exportPdf": "Exporter en PDF"
   },
   "deficit": {
     "bmrHint": "Ce que ton corps brûle au repos, rien qu’à exister.",

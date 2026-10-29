@@ -15,9 +15,11 @@
     "exercises:import": "tsx src/scripts/import-exercises.ts",
     "exercises:export-translations": "tsx src/scripts/export-exercise-translations.ts",
     "library:editor": "tsx src/scripts/grant-library-editor.ts",
-    "foods:import": "tsx src/scripts/import-foods.ts"
+    "foods:import": "tsx src/scripts/import-foods.ts",
+    "pdf:sample": "tsx src/scripts/sample-pdf.ts"
   },
   "dependencies": {
+    "@betterfit/pdf-templates": "workspace:*",
     "@betterfit/shared": "workspace:*",
     "@fastify/cookie": "^11.1.5",
     "@fastify/cors": "^11.3.1",
@@ -31,6 +33,7 @@
     "jose": "^6.2.13",
     "nodemailer": "^10.2.1",
     "pino-pretty": "^13.1.2",
+    "playwright": "^1.64.1",
     "postgres": "^3.4.9",
     "zod": "^4.6.7"
   },

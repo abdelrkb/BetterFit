@@ -35,6 +35,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@betterfit/pdf-templates':
+        specifier: workspace:*
+        version: link:../../packages/pdf-templates
       '@betterfit/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -74,6 +77,9 @@ importers:
       pino-pretty:
         specifier: ^13.1.2
         version: 13.2.0
+      playwright:
+        specifier: ^1.64.1
+        version: 1.64.1
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
@@ -233,6 +239,25 @@ importers:
       react-native-svg:
         specifier: 15.16.0
         version: 15.16.0(react-native@0.88.0(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/pdf-templates:
+    dependencies:
+      '@betterfit/mascot':
+        specifier: workspace:*
+        version: link:../mascot
+      '@betterfit/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.1
+        version: 22.20.5
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -4375,6 +4400,16 @@ packages:
 
   pino@10.4.0:
     resolution: {integrity: sha512-bk1ZMTwG/Vymx+zPoa28MhNzucFvXJWp3csrSuxuHPSMeUettaCoQ5Jvg07mtC4JGNpcfTwz41oVCnNgBK9+vA==}
+    hasBin: true
+
+  playwright-core@1.64.1:
+    resolution: {integrity: sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.64.1:
+    resolution: {integrity: sha512-HCrVhHr5QQuwYoswEUGTb7gGp522yflbv/ST8nF4sFWGuLjQCt17Q/EubpGGSNKYn1tsTCPZxqHhHCfVURu7UA==}
+    engines: {node: '>=20'}
     hasBin: true
 
   plist@3.1.1:
@@ -9867,6 +9902,12 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
+
+  playwright-core@1.64.1: {}
+
+  playwright@1.64.1:
+    dependencies:
+      playwright-core: 1.64.1
 
   plist@3.1.1:
     dependencies:
