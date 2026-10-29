@@ -299,6 +299,44 @@ En cas de rechute ailleurs : rapatrier les fichiers hors du bac à sable, par ex
 - Les libellés des poses (« Squat », « Soulevé de terre ») sont stockés dans
   `packages/mascot`, pas dans `locales/fr.json`. À reprendre le jour où l'anglais arrivera.
 
+## Régression corrigée — les écrans masqués étaient inatteignables
+En créant la navigation à quatre onglets, les écrans qui n'en sont pas ont été déclarés
+comme onglets masqués par `href: null`. Dans cette version d'Expo Router, ça ne masque pas
+le bouton : **ça supprime la route**. Pendant toute la durée des étapes 7 à 10, cinq écrans
+renvoyaient sur l'accueil : la séance guidée, l'historique des séances, la bibliothèque
+d'exercices, l'espace coach et l'écran de démo.
+
+Le test de l'époque disait « ✓ onglet Programme » parce qu'il vérifiait que le bouton
+« Parcourir les exercices » était **affiché**. Il n'a jamais cliqué dessus.
+
+**Correction.** Les écrans hors onglets vivent désormais dans la pile parente
+(`app/(main)/_layout.tsx`), à côté du groupe `(tabs)`. Les URL sont inchangées, puisque
+`(main)` et `(tabs)` sont des groupes. Effet secondaire bienvenu : la séance guidée occupe
+tout l'écran, sans barre d'onglets sous le pouce.
+
+**Garde-fou.** `apps/api/test/routes-exist.test.ts` échoue si `href: null` réapparaît, si la
+barre d'onglets contient autre chose que les quatre onglets, ou si les écrans hors onglets
+retournent dans le navigateur d'onglets. Il ne remplace pas un parcours réel : il interdit
+cette cause précise.
+
+## Décisions de l'étape 11 — Mode libre
+- **La séance libre démarre vide, le chrono tourne tout de suite** (choix du porteur du
+  projet, 29 octobre 2026, modèle : Hevy et Strong). On cherche chaque exercice au moment de
+  le faire : c'est ce qu'on fait vraiment quand on improvise en salle.
+- **Ajouter un exercice marche aussi pendant une séance du programme** : la machine qu'on
+  voulait est parfois prise, et l'alternative doit pouvoir être notée.
+- **Le sélecteur d'exercices s'affiche dans le même écran**, comme le reste de la séance :
+  changer de route téléchargerait un morceau de code, impossible en mode avion.
+- **On ne peut pas terminer une séance libre vide** : l'écran de départ ne propose que
+  « ajouter un exercice » ou « abandonner ». Une séance sans exercice n'encombre pas
+  l'historique.
+- **Limite connue** : la recherche d'exercices passe par le réseau. En salle sans réseau, on
+  ne peut ajouter que ce que la recherche a déjà ramené. Mettre la bibliothèque en cache
+  local demanderait d'embarquer 876 exercices : à décider plus tard, avec le porteur du
+  projet.
+- **Le journal alimentaire fonctionne déjà sans programme** (étape 9) : c'est l'autre moitié
+  de la demande, et elle était réglée par construction.
+
 ## Décisions de l'étape 10 — PDF
 - **Les PDF sont générés à la demande, jamais stockés.** Un programme modifié doit sortir à
   jour, et garder des documents périmés sur le disque ne rendrait service à personne.

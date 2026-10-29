@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/lib/errors';
 import { fetchProgram, listPrograms } from '@/lib/programs';
-import { buildLiveWorkout, todaySession } from '@/lib/start-workout';
+import { buildFreeWorkout, buildLiveWorkout, todaySession } from '@/lib/start-workout';
 import { useWorkout } from '@/stores/workout';
 import { Banner, Body, Button, Caption, Card, Chip, spacing } from '@/ui';
 
@@ -57,6 +57,15 @@ export function TodaySessionCard() {
           label={t('training.create')}
           onPress={() => router.push('/training/edit')}
         />
+        <Button
+          block
+          variant="secondary"
+          label={t('workout.startFree')}
+          onPress={async () => {
+            await start(buildFreeWorkout(t('workout.freeName')));
+            router.push('/workout/live');
+          }}
+        />
       </Card>
     );
   }
@@ -78,6 +87,15 @@ export function TodaySessionCard() {
           variant="ghost"
           label={t('workout.chooseSession')}
           onPress={() => router.push(`/training/${program.data.id}`)}
+        />
+        <Button
+          block
+          variant="secondary"
+          label={t('workout.startFree')}
+          onPress={async () => {
+            await start(buildFreeWorkout(t('workout.freeName')));
+            router.push('/workout/live');
+          }}
         />
       </Card>
     );

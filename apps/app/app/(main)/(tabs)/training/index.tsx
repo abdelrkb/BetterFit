@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/lib/errors';
 import { listPrograms } from '@/lib/programs';
+import { buildFreeWorkout } from '@/lib/start-workout';
+import { useWorkout } from '@/stores/workout';
 import {
   Banner,
   Body,
@@ -28,6 +30,8 @@ export default function TrainingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('programs');
+  const [starting, setStarting] = useState(false);
+  const start = useWorkout((state) => state.start);
 
   const programs = useQuery({
     queryKey: ['programs', tab],
@@ -51,6 +55,23 @@ export default function TrainingScreen() {
       <Link href="/training/edit" asChild>
         <Button block label={t('training.create')} onPress={() => {}} />
       </Link>
+
+      {/* On peut s'entraîner sans rien avoir préparé. */}
+      <Button
+        block
+        variant="secondary"
+        label={t('workout.startFree')}
+        loading={starting}
+        onPress={async () => {
+          setStarting(true);
+          try {
+            await start(buildFreeWorkout(t('workout.freeName')));
+            router.push('/workout/live');
+          } finally {
+            setStarting(false);
+          }
+        }}
+      />
 
       {/* La bibliothèque d'exercices n'a pas d'onglet à elle : on y entre d'ici. */}
       <Link href="/exercises" asChild>

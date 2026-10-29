@@ -63,6 +63,9 @@ type WorkoutState = {
   updateSet: (exerciseIndex: number, setIndex: number, changes: Partial<SetLog>) => Promise<void>;
   addSet: (exerciseIndex: number) => Promise<void>;
   removeSet: (exerciseIndex: number) => Promise<void>;
+  /** Ajoute un exercice en cours de séance : c'est le mode libre. */
+  addExercise: (exercise: LiveExercise) => Promise<void>;
+  removeExercise: (exerciseIndex: number) => Promise<void>;
   goTo: (index: number) => Promise<void>;
   setNotes: (notes: string) => Promise<void>;
   cancel: () => Promise<void>;
@@ -181,6 +184,36 @@ export const useWorkout = create<WorkoutState>((set, get) => {
         ...exercise,
         sets: exercise.sets.slice(0, -1),
       }));
+    },
+
+    /**
+     * Ajoute un exercice à la séance en cours, et s'y place.
+     *
+     * C'est le cœur du mode libre : on improvise, on cherche l'exercice au
+     * moment de le faire. Ça marche aussi pendant une séance du programme,
+     * quand la machine qu'on voulait est prise.
+     */
+    async addExercise(exercise) {
+      const current = get().current;
+      if (!current) return;
+
+      const exercises = [...current.exercises, exercise];
+
+      await persist({ ...current, exercises, currentIndex: exercises.length - 1 });
+    },
+
+    async removeExercise(exerciseIndex) {
+      const current = get().current;
+      if (!current) return;
+
+      const exercises = current.exercises.filter((_, index) => index !== exerciseIndex);
+
+      await persist({
+        ...current,
+        exercises,
+        // On ne laisse jamais l'index pointer au-delà de la liste.
+        currentIndex: Math.max(0, Math.min(current.currentIndex, exercises.length - 1)),
+      });
     },
 
     async goTo(index) {

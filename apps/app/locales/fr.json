@@ -437,7 +437,12 @@
     "recordPrevious": "Avant : {{value}} kg",
     "recordFirst": "C’est ton premier résultat sur cet exercice.",
     "backHome": "Retour à l’accueil",
-    "seeHistory": "Voir mon historique"
+    "seeHistory": "Voir mon historique",
+    "startFree": "Séance libre",
+    "freeName": "Séance libre",
+    "addExercise": "Ajouter un exercice",
+    "freeEmptyTitle": "C’est parti",
+    "freeEmptyBody": "Le chrono tourne. Ajoute ton premier exercice quand tu arrives sur la machine."
   },
   "history": {
     "title": "Mes séances",

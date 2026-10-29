@@ -6,8 +6,11 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { ExercisePicker } from '@/components/ExercisePicker';
 import { RestTimer, formatSeconds } from '@/components/RestTimer';
+import { errorMessage } from '@/lib/errors';
 import { imageUrl } from '@/lib/exercises';
+import { buildLiveExercise } from '@/lib/start-workout';
 import { liveSummary, useWorkout, type LiveExercise } from '@/stores/workout';
 import {
   Banner,
@@ -44,6 +47,7 @@ export default function LiveWorkoutScreen() {
   const updateSet = useWorkout((state) => state.updateSet);
   const addSet = useWorkout((state) => state.addSet);
   const removeSet = useWorkout((state) => state.removeSet);
+  const addExercise = useWorkout((state) => state.addExercise);
   const goTo = useWorkout((state) => state.goTo);
   const cancel = useWorkout((state) => state.cancel);
   const setNotes = useWorkout((state) => state.setNotes);
@@ -61,6 +65,9 @@ export default function LiveWorkoutScreen() {
    * besoin est donc déjà chargé.
    */
   const [phase, setPhase] = useState<'sets' | 'finish' | 'done'>('sets');
+  /** Ouvert quand on cherche un exercice à ajouter en cours de séance. */
+  const [picking, setPicking] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const [result, setResult] = useState<{ queued: boolean; records: PersonalRecord[] } | null>(null);
 
   if (phase === 'done' && result) {
@@ -85,13 +92,46 @@ export default function LiveWorkoutScreen() {
     );
   }
 
+  if (picking) {
+    return (
+      <ExercisePicker
+        onCancel={() => setPicking(false)}
+        onPick={async (picked) => {
+          setAddError(null);
+
+          try {
+            await addExercise(await buildLiveExercise(picked));
+            setPicking(false);
+          } catch (caught) {
+            setAddError(errorMessage(caught));
+            setPicking(false);
+          }
+        }}
+      />
+    );
+  }
+
   const index = current.currentIndex;
   const exercise = current.exercises[index];
 
+  /*
+   * Une séance libre commence vide : on cherche le premier exercice au
+   * moment de le faire. Le minuteur, lui, tourne déjà.
+   */
   if (!exercise) {
     return (
       <Screen>
-        <Banner message={t('workout.brokenSession')} />
+        <Overline>{current.sessionName}</Overline>
+        <Title>{t('workout.freeEmptyTitle')}</Title>
+
+        {addError ? <Banner message={addError} /> : null}
+
+        <Card tone="soft" style={styles.empty}>
+          <Mascot pose="stand" size={110} />
+          <Body style={styles.center}>{t('workout.freeEmptyBody')}</Body>
+        </Card>
+
+        <Button block label={t('workout.addExercise')} onPress={() => setPicking(true)} />
         <Button block variant="danger" label={t('workout.abandon')} onPress={() => void cancel()} />
       </Screen>
     );
@@ -127,6 +167,8 @@ export default function LiveWorkoutScreen() {
         </View>
         <Photo exercise={exercise} />
       </View>
+
+      {addError ? <Banner message={addError} /> : null}
 
       <Card>
         <View style={styles.chips}>
@@ -248,6 +290,15 @@ export default function LiveWorkoutScreen() {
           />
         )}
       </View>
+
+      {/* Ajouter un exercice marche aussi pendant une séance du programme :
+          la machine qu'on voulait est parfois prise. */}
+      <Button
+        block
+        variant="secondary"
+        label={t('workout.addExercise')}
+        onPress={() => setPicking(true)}
+      />
 
       <Button
         block

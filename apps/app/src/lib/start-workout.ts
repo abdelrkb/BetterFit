@@ -62,6 +62,66 @@ export async function buildLiveWorkout(
   };
 }
 
+/**
+ * Une séance libre : rien de prévu, le minuteur part tout de suite.
+ *
+ * On ne demande aucun exercice à l'avance — c'est le principe : on cherche
+ * ce qu'on fait au moment de le faire. Les repères de la dernière fois sont
+ * récupérés exercice par exercice, quand on l'ajoute.
+ */
+export function buildFreeWorkout(name: string): LiveWorkout {
+  return {
+    id: Crypto.randomUUID(),
+    programId: null,
+    sessionId: null,
+    sessionName: name,
+    startedAt: new Date().toISOString(),
+    exercises: [],
+    currentIndex: 0,
+    notes: '',
+  };
+}
+
+/**
+ * Prépare un exercice ajouté au vol, avec ses repères de la dernière fois.
+ *
+ * Trois séries par défaut : c'est ce qu'on fait le plus souvent, et on en
+ * ajoute ou en retire d'un geste.
+ */
+export async function buildLiveExercise(exercise: {
+  id: string;
+  name: string;
+  images: string[];
+  mascotPose: string | null;
+}): Promise<LiveExercise> {
+  const last = (await fetchLastPerformances([exercise.id])).get(exercise.id) ?? [];
+
+  return {
+    exerciseId: exercise.id,
+    name: exercise.name,
+    imageUrl: exercise.images[0] ?? null,
+    mascotPose: exercise.mascotPose,
+    plannedSets: 3,
+    reps: '',
+    load: '',
+    restSeconds: 90,
+    tempo: '',
+    notes: '',
+    lastSets: last,
+    sets: Array.from({ length: 3 }, (_, index) => {
+      const previous = last.find((item) => item.setIndex === index + 1);
+
+      return {
+        setIndex: index + 1,
+        weightKg: previous?.weightKg ?? null,
+        reps: previous?.reps ?? null,
+        rir: null,
+        done: false,
+      };
+    }),
+  };
+}
+
 async function fetchLastPerformances(exerciseIds: string[]) {
   const result = new Map<
     string,
