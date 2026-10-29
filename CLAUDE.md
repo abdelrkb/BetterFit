@@ -96,7 +96,7 @@ pnpm format           # Prettier
 
 `packages/shared` est consommé en TypeScript source : ses imports internes portent l'extension `.js` (exigée par Node côté API), et `apps/app/metro.config.js` contient la résolution qui réécrit `.js` en `.ts` pour Metro. Ne retire pas ce bloc.
 
-**iCloud décharge les fichiers du projet.** Il est sur le Bureau, donc synchronisé, et macOS envoie les fichiers vers le nuage quand le disque se remplit. Un fichier déchargé se lit sans problème dans le Finder mais **bloque indéfiniment** depuis ton environnement d'exécution. Symptômes : `git` affirme que ce n'est pas un dépôt, un `package.json` paraît vide, Metro ne démarre jamais, une commande reste figée sans message.
+**Le projet vit dans `~/Projets/BetterFit`, hors iCloud. Ne le remets jamais sur le Bureau ni dans Documents.** Le 29 octobre 2026, le projet était sur le Bureau — donc synchronisé par iCloud — et macOS a déchargé des fichiers vers le nuage sans pouvoir les récupérer : 36 fichiers source et 62 objets Git sont devenus illisibles. Un fichier déchargé se lit sans problème dans le Finder mais **bloque indéfiniment** depuis ton environnement d'exécution. Symptômes : `git` affirme que ce n'est pas un dépôt, un `package.json` paraît vide, Metro ne démarre jamais, une commande reste figée sans message.
 
 Pour les repérer : `ls -lOR <dossier> | grep -c dataless`. Pour les rapatrier, lance la commande **hors du bac à sable** : `find <dossier> -type f -exec cat {} + > /dev/null`. Ce n'est pas un problème de code : ne cherche pas la panne ailleurs.
 
