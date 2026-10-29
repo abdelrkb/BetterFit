@@ -1,0 +1,1183 @@
+<title>BetterFit Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Layout: barre d'outils en haut, éditeur à gauche (formulaire en accordéon), aperçu A4 à droite ; empilés sur mobile */
+:root{
+  --bg:#F4F1FA; --panel:#FFFFFF; --panel-2:#EFEAF8; --line:#E2D9F3;
+  --fg:#1C0F3A; --muted:#62577F; --accent:#6B3FD9; --accent-ink:#FFFFFF; --accent-soft:#E9E1FB;
+  --warn:#9A4A00; --warn-bg:#FFF1E0; --danger:#B42318;
+  --display:'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --body:'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#120A26; --panel:#1B1236; --panel-2:#241945; --line:#33285A;
+  --fg:#EEE9FB; --muted:#ABA0CC; --accent:#9D7BF5; --accent-ink:#140A2E; --accent-soft:#2E2259;
+  --warn:#FFB869; --warn-bg:#3A2610; --danger:#FF8A80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#120A26; --panel:#1B1236; --panel-2:#241945; --line:#33285A;
+  --fg:#EEE9FB; --muted:#ABA0CC; --accent:#9D7BF5; --accent-ink:#140A2E; --accent-soft:#2E2259;
+  --warn:#FFB869; --warn-bg:#3A2610; --danger:#FF8A80; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line);
+  padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--panel)}
+.brand{font-family:var(--display);font-weight:800;font-size:17px;letter-spacing:-.3px;white-space:nowrap}
+.brand span{color:var(--accent)}
+.brand small{font-family:var(--body);font-weight:600;font-size:12px;color:var(--muted);margin-left:8px;letter-spacing:0}
+.client-pick{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
+.client-pick select{flex:1;min-width:0;max-width:360px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.status{font-size:12px;color:var(--muted);min-width:90px}
+.seg{display:inline-flex;background:var(--panel-2);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:none;background:transparent;border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;min-height:36px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--fg);box-shadow:0 1px 3px rgba(20,8,50,.15)}
+.ex-thumb{width:56px;height:56px;border-radius:12px;background:var(--accent-soft);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.icon-btn[disabled]{opacity:.3;cursor:default}
+
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger)}
+.btn.small{min-height:32px;padding:5px 10px;font-size:12px;border-radius:8px}
+.btn[disabled]{opacity:.55;cursor:progress}
+.icon-btn{border:none;background:transparent;color:var(--muted);cursor:pointer;width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn:hover{background:var(--panel-2);color:var(--danger)}
+
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px}
+textarea{resize:vertical;min-height:70px;line-height:1.45}
+input[type=number]{font-variant-numeric:tabular-nums}
+
+.layout{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.editor{flex:1 1 380px;max-width:520px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.preview{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:18px;align-items:center}
+
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.empty h2{margin:0;font-family:var(--display);font-size:18px}
+.empty p{margin:0;color:var(--muted);line-height:1.5;max-width:46ch}
+
+details.sec{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+details.sec>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .hint{font-weight:500;font-size:12px;color:var(--muted)}
+details.sec>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);flex-shrink:0;margin-left:auto}
+details.sec[open]>summary::after{transform:rotate(-135deg)}
+.sec-body{padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.subhead{font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--accent);margin-top:4px}
+.note{font-size:12px;color:var(--muted);line-height:1.45}
+.alert{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:600;line-height:1.4}
+
+.calc{background:var(--accent-soft);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.calc div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.calc b{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums}
+.calc span{font-size:11px;color:var(--muted);font-weight:600}
+
+.block{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.block-head{display:flex;gap:8px;align-items:flex-end}
+.row{display:flex;gap:6px;align-items:center}
+.row input{min-width:0}
+.row .w2{flex:2}.row .w1{flex:1}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:40px;height:40px;border-radius:50%;border:3px solid transparent;cursor:pointer;outline-offset:2px}
+.swatch[aria-pressed="true"]{border-color:var(--fg)}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.toggles label{display:flex;gap:10px;align-items:center;font-weight:600;min-height:32px;cursor:pointer}
+.toggles input{width:18px;height:18px;accent-color:var(--accent)}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.photo-row img{width:72px;height:72px;object-fit:cover;border-radius:10px}
+
+.page-shell{position:relative;box-shadow:0 1px 2px rgba(20,8,50,.08),0 12px 32px rgba(20,8,50,.12);border-radius:4px;overflow:hidden;background:#F7F4FC;max-width:100%}
+.page-shell .scaler{transform-origin:top left}
+.page-label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-weight:600}
+.page-wrap{display:flex;flex-direction:column;gap:8px;max-width:100%}
+.overflow-badge{background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+#exportStage{position:absolute;left:-12000px;top:0;width:794px}
+
+@media (max-width:560px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.calc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Pages du programme (document imprimé : palette fixe, identique en clair et en sombre) ===== */
+.pg{width:794px;height:1123px;background:#F7F4FC;font-family:'Manrope',system-ui,sans-serif;color:#1C0F3A;display:flex;flex-direction:column;overflow:hidden;position:relative;font-size:13px;line-height:1.45}
+.pg *{box-sizing:border-box}
+.pg h1,.pg h2{margin:0;font-family:'Unbounded','Arial Black',sans-serif;font-weight:700}
+.pg .disp{font-family:'Unbounded','Arial Black',sans-serif;font-weight:700}
+.pg-main{flex:1 0 auto;padding:0 56px;display:flex;flex-direction:column;gap:18px}
+.pg-foot{padding:16px 56px 26px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6E6290}
+.pg-foot b{color:#3A1A8C}
+.pg-top{padding:40px 56px 22px;display:flex;flex-direction:column;gap:16px}
+.pg-bar{display:flex;justify-content:space-between;align-items:center}
+.pg-logo{font-family:'Unbounded','Arial Black',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.4px;color:#1E0D45}
+.pg-who{font-size:12px;font-weight:600;color:#6E6290}
+.pg-eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.pg-title{font-size:34px;letter-spacing:-.8px;line-height:1.1}
+.pg-card{background:#FFFFFF;border:1px solid #E6DDF7;border-radius:18px}
+.pg-soft{background:#EDE6FA;border-radius:14px}
+.pg-lab{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.pg-dark{background:#1E0D45;color:#FFFFFF}
+.pg-chip{background:#1E0D45;color:#FFFFFF;border-radius:14px;padding:12px 18px;display:flex;gap:18px;font-size:12px;font-weight:600}
+.pg-chip div{display:flex;flex-direction:column;gap:2px}
+.pg-chip span:first-child{color:#B9A8E6}
+.pg-chip span:last-child{font-size:15px}
+.num{font-variant-numeric:tabular-nums}
+</style>
+
+<div class="topbar">
+  <div class="brand">BETTER<span>FIT</span><small>Studio</small></div>
+  <div class="seg" role="group" aria-label="Type de programme"><button type="button" id="modeNutri" aria-pressed="true">Nutrition</button><button type="button" id="modeMuscu" aria-pressed="false">Musculation</button></div>
+  <div class="client-pick">
+    <label for="clientSelect" class="lbl">Client</label>
+    <select id="clientSelect" aria-label="Choisir un client"></select>
+  </div>
+  <div class="actions">
+    <span class="status" id="status" aria-live="polite"></span>
+    <button class="btn" id="btnNew" type="button">Nouveau client</button>
+    <button class="btn" id="btnDup" type="button">Semaine suivante</button>
+    <button class="btn danger" id="btnDel" type="button">Supprimer</button>
+    <button class="btn primary" id="btnPdf" type="button">Exporter en PDF</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="editor" id="editor"></div>
+  <div class="preview" id="preview"></div>
+</div>
+<div id="exportStage" aria-hidden="true"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Constantes ---------- */
+const ACCENTS = ['#6B3FD9','#8B5CF6','#A21CAF','#4C1D95'];
+const ACTIVITES = [
+  ['1.2','Sédentaire (bureau, peu de marche)'],
+  ['1.375','Légèrement actif (1–3 séances/sem)'],
+  ['1.55','Actif (3–5 séances/sem)'],
+  ['1.725','Très actif (6–7 séances/sem)'],
+  ['1.9','Extrêmement actif (travail physique + sport)']
+];
+const PAGES = [['profil','Profil & objectifs'],['journee','Journée type'],['deficit','Le déficit calorique'],['courses','Liste de courses'],['recette','Recette']];
+
+/* ---------- État ---------- */
+let db = null, assets = null, downloads = null;
+let clients = {};           // id -> données
+let currentId = null;
+let settings = {coach:'', contact:'', accent:ACCENTS[0]};
+const openSecs = new Set(['client','profil']);
+let mode = 'nutri';
+try{ if(localStorage.getItem('bf-mode') === 'muscu') mode = 'muscu'; }catch(e){}
+openSecs.add('m-prog'); openSecs.add('m-s0');
+let saveTimer = null, settingsTimer = null, previewTimer = null;
+
+/* ---------- Utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v).replace(',','.')); return isFinite(n) ? n : 0; };
+const fmt = (n, d=0) => Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmtDate = s => { if(!s) return ''; const [y,m,d] = s.split('-'); return d && m && y ? `${d}/${m}/${y}` : s; };
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ t.hidden = true; }, 3200);
+}
+function setStatus(s){ $('#status').textContent = s; }
+
+/* ---------- Modèle ---------- */
+function emptyRows(n, f){ return Array.from({length:n}, f); }
+function newClient(nom){
+  return {
+    nom: nom || 'Nouveau client', semaine:'1', debut:'', fin:'',
+    sexe:'F', age:30, poids:65, taille:168, activite:'1.55', seances:3,
+    objectifTitre:'Perte de gras', objectifTexte:'',
+    deficit:400, protGkg:2, lipGkg:0.9, fibres:30, hydra:'',
+    privilegier:['','',''], limiter:['','',''], motCoach:'',
+    repas:[
+      {nom:'Petit-déjeuner', heure:'07h30', kcal:'', items:emptyRows(3,()=>({aliment:'',qte:'',alt:''}))},
+      {nom:'Collation', heure:'10h30', kcal:'', items:emptyRows(2,()=>({aliment:'',qte:'',alt:''}))},
+      {nom:'Déjeuner', heure:'12h30', kcal:'', items:[{aliment:'',qte:'',alt:''},{aliment:'',qte:'',alt:''},{aliment:'Légumes',qte:'à volonté',alt:''},{aliment:'',qte:'',alt:''}]},
+      {nom:'Collation', heure:'16h30', kcal:'', items:emptyRows(2,()=>({aliment:'',qte:'',alt:''}))},
+      {nom:'Dîner', heure:'20h00', kcal:'', items:[{aliment:'',qte:'',alt:''},{aliment:'',qte:'',alt:''},{aliment:'Légumes',qte:'à volonté',alt:''}]}
+    ],
+    joursCourses:7, budget:'',
+    courses:[
+      {nom:'Protéines', items:emptyRows(4,()=>({article:'',qte:''}))},
+      {nom:'Féculents & céréales', items:emptyRows(4,()=>({article:'',qte:''}))},
+      {nom:'Fruits & légumes', items:emptyRows(5,()=>({article:'',qte:''}))},
+      {nom:'Produits laitiers', items:emptyRows(3,()=>({article:'',qte:''}))},
+      {nom:'Matières grasses', items:emptyRows(3,()=>({article:'',qte:''}))},
+      {nom:'Épicerie & divers', items:emptyRows(3,()=>({article:'',qte:''}))}
+    ],
+    recette:{categorie:'Déjeuner', nom:'', prep:'', cuisson:'', portions:'', kcal:'', p:'', g:'', l:'', photo:'',
+      ingredients:emptyRows(5,()=>({nom:'',qte:''})), etapes:['','',''], astuce:''},
+    pages:{profil:true, journee:true, deficit:true, courses:true, recette:true},
+    muscu: defaultMuscu(),
+    updatedAt: Date.now()
+  };
+}
+
+function compute(c){
+  const p = num(c.poids), t = num(c.taille), a = num(c.age), act = num(c.activite) || 1.55;
+  const bmr = 10*p + 6.25*t - 5*a + (c.sexe === 'H' ? 5 : -161);
+  const tdee = bmr * act;
+  const deficit = num(c.deficit);
+  const cible = tdee - deficit;
+  const prot = num(c.protGkg) * p, lip = num(c.lipGkg) * p;
+  const gluc = Math.max(0, (cible - prot*4 - lip*9) / 4);
+  const pct = k => cible > 0 ? Math.round(k / cible * 100) : 0;
+  const repasKcal = (c.repas||[]).reduce((s,r)=> s + num(r.kcal), 0);
+  const hydra = c.hydra !== '' && c.hydra != null ? num(c.hydra) : Math.round(p * 0.035 * 10) / 10;
+  return {
+    bmr, tdee, deficit, cible, prot, lip, gluc,
+    protPct:pct(prot*4), lipPct:pct(lip*9), glucPct:pct(gluc*4),
+    kgSemaine: deficit * 7 / 7700,
+    deficitPct: tdee > 0 ? deficit / tdee * 100 : 0,
+    repasKcal, hydra, valid: p > 0 && t > 0 && a > 0
+  };
+}
+const r10 = n => Math.round(n/10)*10;
+
+/* ---------- Persistance ---------- */
+function current(){ return clients[currentId]; }
+
+function scheduleSave(){
+  const c = current(); if(!c) return;
+  c.updatedAt = Date.now();
+  setStatus(db ? 'Modifications…' : 'Non enregistré');
+  clearTimeout(saveTimer);
+  const id = currentId;
+  saveTimer = setTimeout(()=> saveClient(id), 700);
+}
+async function saveClient(id){
+  if(!db || !clients[id]) return;
+  try{
+    await db.collection('clients').doc(id).set(clone(clients[id]));
+    setStatus('Enregistré');
+  }catch(e){
+    setStatus('Échec de l’enregistrement');
+    if(e && e.code === 'quota_exceeded') toast('Stockage plein : supprime d’anciens clients.');
+  }
+}
+function scheduleSettingsSave(){
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(async ()=>{
+    if(!db) return;
+    try{ await db.doc('settings/studio').set(clone(settings)); }catch(e){}
+  }, 700);
+}
+
+/* ---------- Barre d'outils ---------- */
+function renderSelect(){
+  const sel = $('#clientSelect');
+  const ids = Object.keys(clients).sort((a,b)=> (clients[b].updatedAt||0) - (clients[a].updatedAt||0));
+  sel.innerHTML = ids.length
+    ? ids.map(id => `<option value="${esc(id)}"${id===currentId?' selected':''}>${esc(clients[id].nom || 'Sans nom')} · S${esc(clients[id].semaine||'')}</option>`).join('')
+    : '<option value="">Aucun client</option>';
+  sel.disabled = !ids.length;
+  ['#btnDup','#btnDel','#btnPdf'].forEach(b => $(b).disabled = !ids.length);
+}
+
+function selectClient(id){
+  currentId = id;
+  if(id){ try{ localStorage.setItem('bf-last', id); }catch(e){} }
+  renderSelect(); renderEditor(); renderPreview();
+}
+
+/* ---------- Éditeur ---------- */
+function sec(id, title, hint, body){
+  return `<details class="sec" data-sec="${id}"${openSecs.has(id)?' open':''}><summary>${title}${hint?` <span class="hint">${hint}</span>`:''}</summary><div class="sec-body">${body}</div></details>`;
+}
+function f(label, path, val, type='text', extra=''){
+  const id = 'f-' + path.replace(/\./g,'-');
+  return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" data-path="${path}" value="${esc(val)}" ${extra}></div>`;
+}
+function ta(label, path, val, ph=''){
+  const id = 'f-' + path.replace(/\./g,'-');
+  return `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" data-path="${path}" placeholder="${esc(ph)}">${esc(val)}</textarea></div>`;
+}
+const UP = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+const DOWN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const X = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function calcBox(c){
+  const k = compute(c);
+  if(!k.valid) return '<div class="note">Renseigne poids, taille et âge pour lancer les calculs.</div>';
+  let warn = '';
+  if(k.deficitPct > 25) warn = `<div class="alert">Déficit élevé : ${fmt(k.deficitPct)} % du maintien. Au-delà de 20–25 %, la fatigue et la perte musculaire augmentent.</div>`;
+  if(k.gluc < 80 && k.cible > 0) warn += `<div class="alert">Il ne reste que ${fmt(k.gluc)} g de glucides : baisse les lipides ou le déficit si ce n’est pas voulu.</div>`;
+  return `<div class="calc">
+    <div><b class="num">${fmt(r10(k.bmr))}</b><span>Métabolisme de base (kcal)</span></div>
+    <div><b class="num">${fmt(r10(k.tdee))}</b><span>Maintien (kcal)</span></div>
+    <div><b class="num">${fmt(r10(k.cible))}</b><span>Cible / jour (kcal)</span></div>
+    <div><b class="num">${fmt(k.prot)} g</b><span>Protéines · ${k.protPct} %</span></div>
+    <div><b class="num">${fmt(k.gluc)} g</b><span>Glucides · ${k.glucPct} %</span></div>
+    <div><b class="num">${fmt(k.lip)} g</b><span>Lipides · ${k.lipPct} %</span></div>
+  </div>${warn}<div class="note">Calcul Mifflin-St Jeor × niveau d’activité. Glucides = calories restantes après protéines et lipides.</div>`;
+}
+
+function renderEditor(){
+  const ed = $('#editor');
+  const c = current();
+  if(!c){
+    ed.innerHTML = `<div class="empty"><h2>Aucun client pour l’instant</h2><p>Crée une fiche client : le profil et l’objectif calculent automatiquement calories et macros, et les 5 pages du programme se remplissent à droite.</p><button class="btn primary" type="button" data-action="new">Créer un client</button></div>`;
+    return;
+  }
+  const scroll = window.scrollY;
+  if(mode === 'muscu'){ ed.innerHTML = renderEditorMuscu(c); window.scrollTo(0, scroll); return; }
+  const k = compute(c);
+
+  const sClient = sec('client','Client & période','',`
+    ${f('Nom du client','nom',c.nom)}
+    <div class="grid g3">${f('Semaine n°','semaine',c.semaine)}${f('Début','debut',c.debut,'date')}${f('Fin','fin',c.fin,'date')}</div>
+    <div class="subhead">Toi (commun à tous les clients)</div>
+    <div class="grid">${f('Nom du coach','settings.coach',settings.coach)}${f('Contact','settings.contact',settings.contact,'text','placeholder="contact@betterfit.fr"')}</div>
+    <div class="field"><span class="lbl">Couleur d’accent</span><div class="swatches">${ACCENTS.map(a=>`<button type="button" class="swatch" style="background:${a}" data-action="accent" data-val="${a}" aria-label="Accent ${a}" aria-pressed="${settings.accent===a}"></button>`).join('')}</div></div>
+  `);
+
+  const sProfil = sec('profil','Profil & calculs', k.valid?`${fmt(r10(k.cible))} kcal/j`:'',`
+    <div class="grid g3">
+      <div class="field"><label for="f-sexe">Sexe</label><select id="f-sexe" data-path="sexe"><option value="F"${c.sexe==='F'?' selected':''}>Femme</option><option value="H"${c.sexe==='H'?' selected':''}>Homme</option></select></div>
+      ${f('Âge','age',c.age,'number','min="10" max="100"')}
+      ${f('Séances / sem','seances',c.seances,'number','min="0" max="14"')}
+      ${f('Poids (kg)','poids',c.poids,'number','step="0.1"')}
+      ${f('Taille (cm)','taille',c.taille,'number')}
+      ${f('Déficit (kcal)','deficit',c.deficit,'number','step="50"')}
+    </div>
+    <div class="field"><label for="f-activite">Niveau d’activité</label><select id="f-activite" data-path="activite">${ACTIVITES.map(([v,l])=>`<option value="${v}"${String(c.activite)===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="grid g3">
+      ${f('Protéines (g/kg)','protGkg',c.protGkg,'number','step="0.1"')}
+      ${f('Lipides (g/kg)','lipGkg',c.lipGkg,'number','step="0.1"')}
+      ${f('Fibres (g)','fibres',c.fibres,'number')}
+    </div>
+    ${f('Hydratation (L) — vide = auto','hydra',c.hydra,'number',`step="0.1" placeholder="${fmt(k.hydra,1)}"`)}
+    <div id="calcBox">${calcBox(c)}</div>
+  `);
+
+  const sObj = sec('objectif','Objectif & conseils','',`
+    ${f('Objectif principal','objectifTitre',c.objectifTitre)}
+    ${ta('Description de l’objectif','objectifTexte',c.objectifTexte,'Ex. −4 kg en 8 semaines en préservant la masse musculaire.')}
+    <div class="grid">
+      <div class="field"><span class="lbl">À privilégier</span>${c.privilegier.map((v,i)=>`<input type="text" aria-label="À privilégier ${i+1}" data-path="privilegier.${i}" value="${esc(v)}">`).join('')}</div>
+      <div class="field"><span class="lbl">À limiter</span>${c.limiter.map((v,i)=>`<input type="text" aria-label="À limiter ${i+1}" data-path="limiter.${i}" value="${esc(v)}">`).join('')}</div>
+    </div>
+    ${ta('Le mot du coach','motCoach',c.motCoach,'Message personnalisé pour la semaine.')}
+  `);
+
+  const sRepas = sec('repas','Journée type', k.repasKcal ? `${fmt(k.repasKcal)} / ${fmt(r10(k.cible))} kcal` : '', `
+    ${c.repas.map((r,i)=>`<div class="block">
+      <div class="block-head">
+        <div class="field" style="flex:2">${'<label for="f-repas-'+i+'-nom">Repas '+(i+1)+'</label>'}<input id="f-repas-${i}-nom" type="text" data-path="repas.${i}.nom" value="${esc(r.nom)}"></div>
+        <div class="field" style="flex:1"><label for="f-repas-${i}-heure">Heure</label><input id="f-repas-${i}-heure" type="text" data-path="repas.${i}.heure" value="${esc(r.heure)}"></div>
+        <div class="field" style="flex:1"><label for="f-repas-${i}-kcal">kcal</label><input id="f-repas-${i}-kcal" type="number" data-path="repas.${i}.kcal" value="${esc(r.kcal)}"></div>
+        <button type="button" class="icon-btn" data-action="del-repas" data-i="${i}" aria-label="Supprimer ce repas">${X}</button>
+      </div>
+      <div class="row lbl"><span class="w2">Aliment</span><span class="w1">Quantité</span><span class="w2">Alternative</span><span style="width:32px"></span></div>
+      ${r.items.map((it,j)=>`<div class="row">
+        <input class="w2" type="text" aria-label="Aliment" data-path="repas.${i}.items.${j}.aliment" value="${esc(it.aliment)}">
+        <input class="w1" type="text" aria-label="Quantité" data-path="repas.${i}.items.${j}.qte" value="${esc(it.qte)}">
+        <input class="w2" type="text" aria-label="Alternative" data-path="repas.${i}.items.${j}.alt" value="${esc(it.alt)}">
+        <button type="button" class="icon-btn" data-action="del-item" data-i="${i}" data-j="${j}" aria-label="Supprimer la ligne">${X}</button>
+      </div>`).join('')}
+      <div><button type="button" class="btn small" data-action="add-item" data-i="${i}">+ Ligne</button></div>
+    </div>`).join('')}
+    <div><button type="button" class="btn small" data-action="add-repas">+ Ajouter un repas</button></div>
+  `);
+
+  const sCourses = sec('courses','Liste de courses','',`
+    <div class="grid">${f('Pour (jours)','joursCourses',c.joursCourses,'number')}${f('Budget estimé (€)','budget',c.budget,'text')}</div>
+    ${c.courses.map((cat,i)=>`<div class="block">
+      <div class="block-head"><div class="field" style="flex:1"><label for="f-cat-${i}">Rayon</label><input id="f-cat-${i}" type="text" data-path="courses.${i}.nom" value="${esc(cat.nom)}"></div>
+      <button type="button" class="icon-btn" data-action="del-cat" data-i="${i}" aria-label="Supprimer ce rayon">${X}</button></div>
+      ${cat.items.map((it,j)=>`<div class="row">
+        <input class="w2" type="text" aria-label="Article" placeholder="Article" data-path="courses.${i}.items.${j}.article" value="${esc(it.article)}">
+        <input class="w1" type="text" aria-label="Quantité" placeholder="Qté" data-path="courses.${i}.items.${j}.qte" value="${esc(it.qte)}">
+        <button type="button" class="icon-btn" data-action="del-art" data-i="${i}" data-j="${j}" aria-label="Supprimer l’article">${X}</button>
+      </div>`).join('')}
+      <div><button type="button" class="btn small" data-action="add-art" data-i="${i}">+ Article</button></div>
+    </div>`).join('')}
+    <div><button type="button" class="btn small" data-action="add-cat">+ Ajouter un rayon</button></div>
+  `);
+
+  const R = c.recette;
+  const sRecette = sec('recette','Recette','',`
+    <div class="grid">${f('Nom de la recette','recette.nom',R.nom)}${f('Moment','recette.categorie',R.categorie)}</div>
+    <div class="grid g3">${f('Préparation (min)','recette.prep',R.prep)}${f('Cuisson (min)','recette.cuisson',R.cuisson)}${f('Portions','recette.portions',R.portions)}</div>
+    <div class="subhead">Par portion</div>
+    <div class="grid">${f('Calories (kcal)','recette.kcal',R.kcal,'number')}${f('Protéines (g)','recette.p',R.p,'number')}${f('Glucides (g)','recette.g',R.g,'number')}${f('Lipides (g)','recette.l',R.l,'number')}</div>
+    <div class="field"><span class="lbl">Photo du plat</span>
+      <div class="photo-row">${R.photo?`<img src="/_blob/${esc(R.photo)}" alt="Photo actuelle">`:''}
+      ${assets?`<label class="btn small" for="photoInput">${R.photo?'Changer la photo':'Ajouter une photo'}</label><input id="photoInput" type="file" accept="image/*" hidden>`:'<span class="note">Ajout de photo indisponible dans cette vue.</span>'}
+      ${R.photo?'<button type="button" class="btn small" data-action="del-photo">Retirer</button>':''}</div></div>
+    <div class="subhead">Ingrédients</div>
+    ${R.ingredients.map((it,j)=>`<div class="row">
+      <input class="w2" type="text" aria-label="Ingrédient" placeholder="Ingrédient" data-path="recette.ingredients.${j}.nom" value="${esc(it.nom)}">
+      <input class="w1" type="text" aria-label="Quantité" placeholder="Qté" data-path="recette.ingredients.${j}.qte" value="${esc(it.qte)}">
+      <button type="button" class="icon-btn" data-action="del-ing" data-j="${j}" aria-label="Supprimer l’ingrédient">${X}</button></div>`).join('')}
+    <div><button type="button" class="btn small" data-action="add-ing">+ Ingrédient</button></div>
+    <div class="subhead">Étapes</div>
+    ${R.etapes.map((e,j)=>`<div class="row"><textarea aria-label="Étape ${j+1}" data-path="recette.etapes.${j}" style="min-height:52px">${esc(e)}</textarea><button type="button" class="icon-btn" data-action="del-etape" data-j="${j}" aria-label="Supprimer l’étape">${X}</button></div>`).join('')}
+    <div><button type="button" class="btn small" data-action="add-etape">+ Étape</button></div>
+    ${ta('L’astuce du coach','recette.astuce',R.astuce)}
+  `);
+
+  const sPages = sec('pages','Pages à inclure','',`<div class="toggles">${PAGES.map(([k2,l])=>`<label><input type="checkbox" data-path="pages.${k2}" ${c.pages[k2]!==false?'checked':''}> ${l}</label>`).join('')}</div>`);
+
+  ed.innerHTML = sClient + sProfil + sObj + sRepas + sCourses + sRecette + sPages;
+  window.scrollTo(0, scroll);
+}
+
+/* chemin "a.b.0.c" */
+function setPath(obj, path, val){
+  const ks = path.split('.'); let o = obj;
+  for(let i=0;i<ks.length-1;i++) o = o[ks[i]];
+  o[ks[ks.length-1]] = val;
+}
+
+const editor = $('#editor');
+editor.addEventListener('input', e => {
+  const el = e.target; const path = el.dataset.path; if(!path) return;
+  let val = el.type === 'checkbox' ? el.checked : el.value;
+  if(path.startsWith('settings.')){
+    settings[path.slice(9)] = val; scheduleSettingsSave(); queuePreview(); return;
+  }
+  const c = current(); if(!c) return;
+  setPath(c, path, val);
+  if(['poids','taille','age','sexe','activite','deficit','protGkg','lipGkg'].includes(path)){
+    const box = $('#calcBox'); if(box) box.innerHTML = calcBox(c);
+  }
+  if(path === 'nom' || path === 'semaine') renderSelect();
+  const mt = path.match(/^muscu\.seances\.(\d+)\.exercices\.(\d+)\.(nom|pose)$/);
+  if(mt){ const t = document.getElementById(`thumb-${mt[1]}-${mt[2]}`); if(t) t.innerHTML = mascotSVG(poseFor(c.muscu.seances[+mt[1]].exercices[+mt[2]]), 56); }
+  scheduleSave(); queuePreview();
+});
+editor.addEventListener('toggle', e => {
+  const d = e.target; if(!d.dataset || !d.dataset.sec) return;
+  d.open ? openSecs.add(d.dataset.sec) : openSecs.delete(d.dataset.sec);
+}, true);
+
+editor.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]'); if(!b) return;
+  const a = b.dataset.action, i = +b.dataset.i, j = +b.dataset.j;
+  if(a === 'new'){ createClient(); return; }
+  if(a === 'accent'){ settings.accent = b.dataset.val; scheduleSettingsSave(); renderEditor(); renderPreview(); return; }
+  const c = current(); if(!c) return;
+  if(mode === 'muscu' && muscuAction(c, a, i, j)){ renderEditor(); scheduleSave(); renderPreview(); return; }
+  const blank = {aliment:'',qte:'',alt:''};
+  switch(a){
+    case 'add-repas': c.repas.push({nom:'Repas', heure:'', kcal:'', items:[{...blank},{...blank}]}); break;
+    case 'del-repas': c.repas.splice(i,1); break;
+    case 'add-item': c.repas[i].items.push({...blank}); break;
+    case 'del-item': c.repas[i].items.splice(j,1); break;
+    case 'add-cat': c.courses.push({nom:'Rayon', items:[{article:'',qte:''},{article:'',qte:''}]}); break;
+    case 'del-cat': c.courses.splice(i,1); break;
+    case 'add-art': c.courses[i].items.push({article:'',qte:''}); break;
+    case 'del-art': c.courses[i].items.splice(j,1); break;
+    case 'add-ing': c.recette.ingredients.push({nom:'',qte:''}); break;
+    case 'del-ing': c.recette.ingredients.splice(j,1); break;
+    case 'add-etape': c.recette.etapes.push(''); break;
+    case 'del-etape': c.recette.etapes.splice(j,1); break;
+    case 'del-photo': c.recette.photo = ''; break;
+    default: return;
+  }
+  renderEditor(); scheduleSave(); renderPreview();
+});
+
+editor.addEventListener('change', async e => {
+  if(e.target.id !== 'photoInput' || !assets) return;
+  const file = e.target.files && e.target.files[0]; if(!file) return;
+  const c = current(); if(!c) return;
+  setStatus('Envoi de la photo…');
+  try{
+    const res = await assets.upload(file);
+    c.recette.photo = res.id;
+    renderEditor(); renderPreview(); scheduleSave();
+  }catch(err){
+    setStatus(''); toast('La photo n’a pas pu être envoyée' + (err && err.code ? ` (${err.code})` : '') + '.');
+  }
+});
+
+/* ---------- Actions client ---------- */
+function createClient(){
+  const id = uid();
+  clients[id] = newClient('Nouveau client');
+  openSecs.add('client'); openSecs.add('profil');
+  selectClient(id); scheduleSave();
+  const n = $('#f-nom'); if(n){ n.focus(); n.select(); }
+}
+$('#btnNew').addEventListener('click', createClient);
+$('#btnDup').addEventListener('click', () => {
+  const c = current(); if(!c) return;
+  const copy = clone(c); const id = uid();
+  const s = parseInt(c.semaine,10);
+  copy.semaine = isFinite(s) ? String(s+1) : c.semaine;
+  copy.debut = ''; copy.fin = ''; copy.updatedAt = Date.now();
+  clients[id] = copy; selectClient(id); scheduleSave();
+  toast(`Semaine ${copy.semaine} créée pour ${copy.nom}.`);
+});
+const delBtn = $('#btnDel');
+delBtn.addEventListener('click', async () => {
+  if(!current()) return;
+  if(!delBtn.dataset.armed){
+    delBtn.dataset.armed = '1'; delBtn.textContent = 'Confirmer la suppression';
+    clearTimeout(delBtn._t); delBtn._t = setTimeout(()=>{ delete delBtn.dataset.armed; delBtn.textContent = 'Supprimer'; }, 4000);
+    return;
+  }
+  delete delBtn.dataset.armed; delBtn.textContent = 'Supprimer';
+  const id = currentId, nom = clients[id].nom;
+  delete clients[id];
+  if(db){ try{ await db.collection('clients').doc(id).delete(); }catch(e){} }
+  const ids = Object.keys(clients).sort((a,b)=> (clients[b].updatedAt||0)-(clients[a].updatedAt||0));
+  selectClient(ids[0] || null);
+  toast(`Fiche « ${nom} » supprimée.`);
+});
+$('#clientSelect').addEventListener('change', e => selectClient(e.target.value));
+
+/* ---------- Pages du programme ---------- */
+function head(c, s, eyebrow, title, right=''){
+  return `<div class="pg-top">
+    <div class="pg-bar"><div class="pg-logo">BETTER<span style="color:${s.accent}">FIT</span></div><div class="pg-who">${esc(c.nom)}${c.semaine?` · Semaine ${esc(c.semaine)}`:''}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:6px"><div class="pg-eyebrow" style="color:${s.accent}">${eyebrow}</div><h1 class="pg-title">${title}</h1></div>${right}
+    </div></div>`;
+}
+function foot(s, n){ return `<div class="pg-foot"><div>BetterFit${s.contact?` · ${esc(s.contact)}`:''}</div><b>${String(n).padStart(2,'0')}</b></div>`; }
+const filled = a => (a||[]).filter(x => String(x||'').trim());
+
+function pageProfil(c, k, s, n){
+  const periode = c.debut || c.fin ? `${fmtDate(c.debut) || '…'} → ${fmtDate(c.fin) || '…'}` : '';
+  const act = (ACTIVITES.find(x=>x[0]===String(c.activite))||['',''])[1].split(' (')[0];
+  const bar = (pct, col) => `<div style="height:6px;border-radius:3px;background:#EDE6FA;overflow:hidden"><div style="width:${Math.min(100,pct)}%;height:6px;background:${col}"></div></div>`;
+  const macro = (lab, val, pct, col) => `<div class="pg-card" style="padding:20px 18px;display:flex;flex-direction:column;gap:6px">
+      <div class="pg-lab" style="color:#5B2FC9">${lab}</div><div class="disp num" style="font-size:26px">${val} g</div>${bar(pct,col)}<div style="font-size:12px;color:#6E6290">${pct} % de l’apport</div></div>`;
+  const pv = filled(c.privilegier), lm = filled(c.limiter);
+  const list = (arr, hollow) => arr.map(t => `<div style="display:flex;gap:10px;align-items:flex-start"><div style="width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;${hollow?'border:2px solid #5B2FC9':'background:#5B2FC9'}"></div><div>${esc(t)}</div></div>`).join('');
+  return `<div class="pg">
+  <div class="pg-dark" style="padding:48px 56px 44px;display:flex;flex-direction:column;gap:34px;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-90px;top:-90px;width:320px;height:320px;border-radius:50%;background:${s.accent};opacity:.55"></div>
+    <div style="position:absolute;right:120px;top:150px;width:120px;height:120px;border-radius:50%;border:2px solid #B79CF5;opacity:.6"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;position:relative">
+      <div class="disp" style="font-weight:800;font-size:22px;letter-spacing:-.5px">BETTER<span style="color:#C4ADFF">FIT</span></div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#D9CCFF">Coaching nutrition</div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;position:relative">
+      <div class="pg-lab" style="font-size:13px;letter-spacing:3px;color:#C4ADFF">Programme alimentaire</div>
+      <h1 style="font-size:44px;line-height:1.05;letter-spacing:-1px">${esc(c.nom)}</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;position:relative">
+      ${[['Période',periode||'—'],['Coach',s.coach||'—'],['Version',c.semaine?`Semaine ${c.semaine}`:'—']].map(([l,v])=>`<div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #5A44A0;padding-top:12px"><div class="pg-lab" style="color:#B9A8E6;letter-spacing:1.5px">${l}</div><div style="font-size:15px;font-weight:600">${esc(v)}</div></div>`).join('')}
+    </div></div>
+  <div class="pg-main" style="padding-top:36px;gap:24px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+      <div class="pg-card" style="padding:22px 24px;display:flex;flex-direction:column;gap:10px">
+        <div class="pg-lab" style="color:#5B2FC9">Objectif principal</div>
+        <div class="disp" style="font-size:20px;line-height:1.2">${esc(c.objectifTitre)}</div>
+        ${c.objectifTexte?`<div style="color:#4A3F66">${esc(c.objectifTexte)}</div>`:''}</div>
+      <div class="pg-card" style="padding:22px 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+        ${[['Poids',`${fmt(num(c.poids),num(c.poids)%1?1:0)} kg`],['Taille',`${fmt(num(c.taille))} cm`],['Âge',`${fmt(num(c.age))} ans`],['Activité',`${fmt(num(c.seances))} séances/sem`]].map(([l,v])=>`<div style="display:flex;flex-direction:column;gap:4px"><div class="pg-lab" style="color:#6E6290;letter-spacing:1px">${l}</div><div class="num" style="font-size:18px;font-weight:700">${v}</div></div>`).join('')}
+        <div style="grid-column:1 / -1;font-size:12px;color:#6E6290">${esc(act)}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between"><h2 style="font-size:18px">Apports journaliers</h2><div style="font-size:12px;color:#6E6290">Cibles moyennes par jour</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+        <div style="background:${s.accent};color:#fff;border-radius:18px;padding:20px 18px;display:flex;flex-direction:column;gap:6px">
+          <div class="pg-lab" style="color:#EFE8FF">Calories</div><div class="disp num" style="font-size:26px">${fmt(r10(k.cible))}</div><div style="font-size:12px;font-weight:600;color:#EFE8FF">kcal / jour</div></div>
+        ${macro('Protéines',fmt(k.prot),k.protPct,'#5B2FC9')}${macro('Glucides',fmt(k.gluc),k.glucPct,'#8F6BEA')}${macro('Lipides',fmt(k.lip),k.lipPct,'#C4ADFF')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+        ${[['Hydratation',`${fmt(k.hydra,1)} L`],['Repas / jour',String(c.repas.length)],['Fibres',`${fmt(num(c.fibres))} g`]].map(([l,v])=>`<div class="pg-soft" style="padding:14px 18px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:600">${l}</div><div class="num" style="font-size:15px;font-weight:700;color:#3A1A8C">${v}</div></div>`).join('')}
+      </div></div>
+    ${pv.length||lm.length?`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+      <div style="display:flex;flex-direction:column;gap:10px">${pv.length?`<h2 style="font-size:16px">À privilégier</h2>${list(pv,false)}`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:10px">${lm.length?`<h2 style="font-size:16px">À limiter</h2>${list(lm,true)}`:''}</div></div>`:''}
+    ${c.motCoach?`<div class="pg-card" style="border:1px dashed #B79CF5;padding:18px 22px;display:flex;flex-direction:column;gap:8px"><div class="pg-lab" style="color:#5B2FC9">Le mot du coach</div><div style="color:#3B3054;line-height:1.55;white-space:pre-line">${esc(c.motCoach)}</div></div>`:''}
+  </div>${foot(s,n)}</div>`;
+}
+
+function pageJournee(c, k, s, n){
+  const total = k.repasKcal || r10(k.cible);
+  const chip = `<div class="pg-chip"><div><span>Total</span><span class="num">${fmt(total)} kcal</span></div><div><span>P / G / L</span><span class="num">${fmt(k.prot)} · ${fmt(k.gluc)} · ${fmt(k.lip)} g</span></div></div>`;
+  const meals = c.repas.map((r,i)=>{
+    const soft = i % 2 === 1;
+    const items = r.items.filter(it => (it.aliment||'').trim() || (it.qte||'').trim());
+    const line = soft ? '#DED3F5' : '#F0EAFB';
+    return `<div style="${soft?'background:#EDE6FA;':'background:#fff;border:1px solid #E6DDF7;'}border-radius:18px;padding:14px 20px;display:flex;gap:18px">
+      <div style="width:100px;flex-shrink:0;display:flex;flex-direction:column;gap:4px">
+        <div class="disp" style="font-size:24px;color:${s.accent}">${String(i+1).padStart(2,'0')}</div>
+        <div style="font-weight:700">${esc(r.nom)}</div><div style="font-size:12px;color:#6E6290">${esc(r.heure)}</div></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <div style="display:grid;grid-template-columns:2fr 1fr 2fr;gap:12px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6E6290;padding-bottom:6px;border-bottom:1px solid ${soft?'#D8CBF3':'#E6DDF7'}"><div>Aliment</div><div>Quantité</div><div>Alternative</div></div>
+        ${items.map((it,j)=>`<div style="display:grid;grid-template-columns:2fr 1fr 2fr;gap:12px;padding:5px 0;${j<items.length-1?`border-bottom:1px solid ${line}`:''}"><div style="font-weight:600">${esc(it.aliment)}</div><div>${esc(it.qte)}</div><div style="color:#5E5280">${esc(it.alt)}</div></div>`).join('')}
+      </div>
+      <div style="width:64px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:2px">${r.kcal!==''&&r.kcal!=null?`<div class="num" style="font-size:16px;font-weight:800;color:#3A1A8C">${fmt(num(r.kcal))}</div><div style="font-size:11px;color:#6E6290">kcal</div>`:''}</div>
+    </div>`;
+  }).join('');
+  return `<div class="pg">${head(c,s,'Plan des repas','Journée type',chip)}<div class="pg-main" style="gap:10px">${meals}</div>${foot(s,n)}</div>`;
+}
+
+function pageDeficit(c, k, s, n){
+  const tdee = k.tdee > 0 ? k.tdee : 1;
+  const dig = tdee * 0.10, bmrP = Math.round(k.bmr / tdee * 100), digP = 10, actP = Math.max(0, 100 - bmrP - digP);
+  const surplus = k.deficit < 0;
+  const seg = (w, bg, col, txt) => `<div style="width:${w}%;background:${bg};color:${col};display:flex;align-items:center;justify-content:center;padding:0 8px;white-space:nowrap;overflow:hidden">${w>=9?txt:''}</div>`;
+  const bars = (h1,h2,dark) => `<div style="display:flex;align-items:flex-end;gap:8px;height:64px"><div style="flex:1;height:${h1}%;background:${dark?'#C4ADFF':s.accent};border-radius:8px 8px 0 0"></div><div style="flex:1;height:${h2}%;background:${dark?'#5A44A0':'#D8CBF3'};border-radius:8px 8px 0 0"></div></div>`;
+  const rule = (i, t, d) => `<div class="pg-soft" style="padding:13px 16px;display:flex;gap:12px"><div class="disp" style="color:${s.accent}">${i}</div><div><b>${t}</b> ${d}</div></div>`;
+  return `<div class="pg">
+  ${head(c,s,'Comprendre','Le déficit calorique')}
+  <div class="pg-main">
+    <p style="margin:-6px 0 0;font-size:14px;line-height:1.55;color:#3B3054;max-width:600px">Pour perdre du gras, le corps doit dépenser un peu plus d’énergie qu’il n’en reçoit. Il puise alors la différence dans ses réserves. C’est ça, le déficit calorique.</p>
+    <div class="pg-card" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="font-size:16px">Ce que tu dépenses chaque jour</h2><div class="num" style="font-weight:800;color:#3A1A8C">≈ ${fmt(r10(k.tdee))} kcal</div></div>
+      <div style="display:flex;height:46px;border-radius:12px;overflow:hidden;font-size:12px;font-weight:700">
+        ${seg(bmrP,'#1E0D45','#fff',`Métabolisme de base · ${bmrP} %`)}${seg(actP,s.accent,'#fff',`Activité & sport · ${actP} %`)}${seg(digP,'#C4ADFF','#1E0D45','Digestion')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;color:#3B3054">
+        <div><b style="color:#1C0F3A">Métabolisme de base</b> <span class="num" style="color:#3A1A8C;font-weight:700">≈ ${fmt(r10(k.bmr))} kcal</span><br>L’énergie pour respirer, garder ta température et faire tourner tes organes, même au repos.</div>
+        <div><b style="color:#1C0F3A">Activité & sport</b> <span class="num" style="color:#3A1A8C;font-weight:700">≈ ${fmt(r10(k.tdee-k.bmr-dig))} kcal</span><br>Marche, escaliers, tâches du quotidien et entraînements. Bouger plus au quotidien compte autant que le sport.</div>
+        <div><b style="color:#1C0F3A">Digestion</b> <span class="num" style="color:#3A1A8C;font-weight:700">≈ ${fmt(r10(dig))} kcal</span><br>Digérer coûte de l’énergie, surtout les protéines.</div>
+      </div>
+      <div style="font-size:11px;color:#6E6290">Estimation à partir de ton profil (formule Mifflin-St Jeor) : c’est un point de départ, ajusté selon tes résultats.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+      <div class="pg-card" style="padding:16px;display:flex;flex-direction:column;gap:10px"><div class="pg-lab" style="color:#6E6290">Surplus</div>${bars(100,78)}<div style="color:#3B3054">Tu manges plus que tu ne dépenses : le poids augmente.</div></div>
+      <div class="pg-card" style="padding:16px;display:flex;flex-direction:column;gap:10px"><div class="pg-lab" style="color:#6E6290">Maintien</div>${bars(85,85)}<div style="color:#3B3054">Apports et dépenses s’équilibrent : le poids reste stable.</div></div>
+      <div class="pg-dark" style="border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px"><div class="pg-lab" style="color:#C4ADFF">Déficit${surplus?'':' · ton objectif'}</div>${bars(68,85,true)}<div style="color:#E4DAFF">Tu manges un peu moins que tu ne dépenses : le corps puise dans ses réserves.</div></div>
+    </div>
+    <div style="display:flex;gap:20px;font-size:11px;color:#6E6290;margin-top:-8px">
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:3px;background:${s.accent}"></div>Ce que tu manges</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:3px;background:#D8CBF3"></div>Ce que tu dépenses</div></div>
+    <div style="background:${s.accent};color:#fff;border-radius:18px;padding:18px 24px;display:flex;flex-direction:column;gap:12px">
+      <div class="pg-lab" style="color:#EFE8FF">Ton calcul personnalisé</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div><div class="disp num" style="font-size:24px">${fmt(r10(k.tdee))}</div><div style="font-size:12px;color:#EFE8FF">kcal de maintien</div></div>
+        <div class="disp" style="font-size:24px;color:#D9CCFF">${surplus?'+':'−'}</div>
+        <div><div class="disp num" style="font-size:24px">${fmt(Math.abs(k.deficit))}</div><div style="font-size:12px;color:#EFE8FF">kcal de ${surplus?'surplus':'déficit'}</div></div>
+        <div class="disp" style="font-size:24px;color:#D9CCFF">=</div>
+        <div style="background:#fff;color:#1E0D45;border-radius:14px;padding:10px 16px"><div class="disp num" style="font-size:24px">${fmt(r10(k.cible))}</div><div style="font-size:12px;color:#5E5280;font-weight:600">kcal / jour visés</div></div>
+      </div>
+      <div style="color:#EFE8FF">${k.deficit>0?`Rythme attendu : environ ${fmt(k.kgSemaine,1)} kg par semaine (estimation, le rythme réel varie).`:surplus?`Objectif : prise de masse progressive.`:'Objectif : maintien du poids.'}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:16px">Les règles d’or</h2>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+        ${rule(1,'Un déficit modéré.','Environ 300 à 500 kcal par jour suffisent. Trop strict, il fatigue, affame et fait perdre du muscle.')}
+        ${rule(2,'Des protéines à chaque repas.',`Vise environ ${fmt(k.prot)} g par jour : elles protègent tes muscles et calent plus longtemps.`)}
+        ${rule(3,'Garde la musculation.','Elle dit au corps de conserver le muscle et de puiser dans le gras.')}
+        ${rule(4,'Regarde la tendance.','Le poids varie d’un jour à l’autre (eau, sel, digestion). Compare tes moyennes de semaine.')}
+      </div></div>
+  </div>${foot(s,n)}</div>`;
+}
+
+function pageCourses(c, k, s, n){
+  const chip = `<div class="pg-chip"><div><span>Pour</span><span class="num">${fmt(num(c.joursCourses))} jours</span></div>${c.budget?`<div><span>Budget estimé</span><span class="num">${esc(c.budget)} €</span></div>`:''}</div>`;
+  const cats = c.courses.map(cat => {
+    const items = cat.items.filter(it => (it.article||'').trim());
+    const rows = (items.length ? items : cat.items.slice(0,3));
+    return `<div class="pg-card" style="padding:16px 20px;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:2px solid ${s.accent}"><h2 style="font-size:15px">${esc(cat.nom)}</h2><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6E6290">Qté</div></div>
+      ${rows.map((it,j)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;${j<rows.length-1?'border-bottom:1px solid #F0EAFB':''}"><div style="width:14px;height:14px;border:1.5px solid #8F6BEA;border-radius:4px;flex-shrink:0"></div><div style="flex:1;min-height:19px">${esc(it.article)}</div><div style="color:#6E6290">${esc(it.qte)}</div></div>`).join('')}
+    </div>`;
+  }).join('');
+  const tip = (i,t) => `<div style="display:flex;flex-direction:column;gap:4px"><div class="pg-lab" style="color:#3A1A8C;letter-spacing:1.2px">Astuce ${i}</div><div style="font-size:12px">${t}</div></div>`;
+  return `<div class="pg">${head(c,s,'Organisation','Liste de courses',chip)}
+  <div class="pg-main" style="gap:14px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start">${cats}</div>
+    <div class="pg-soft" style="border-radius:18px;padding:16px 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+      ${tip(1,'Fais tes courses après avoir mangé : tu achèteras moins sur un coup de tête.')}${tip(2,'Les légumes surgelés sont aussi bons que les frais et se gardent plus longtemps.')}${tip(3,'Compare les étiquettes : regarde les protéines et les sucres pour 100 g.')}
+    </div></div>${foot(s,n)}</div>`;
+}
+
+function pageRecette(c, k, s, n){
+  const R = c.recette;
+  const ings = R.ingredients.filter(i => (i.nom||'').trim());
+  const steps = filled(R.etapes);
+  const meta = [['Préparation',R.prep?`${R.prep} min`:''],['Cuisson',R.cuisson?`${R.cuisson} min`:''],['Portions',R.portions]].filter(x=>x[1]);
+  const mac = (l,v,u,hl) => `<div style="${hl?`background:${s.accent};color:#fff;`:'background:#fff;border:1px solid #E6DDF7;'}border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px"><div class="pg-lab" style="letter-spacing:1.2px;color:${hl?'#EFE8FF':'#5B2FC9'}">${l}</div><div class="disp num" style="font-size:20px">${v!==''&&v!=null?fmt(num(v)):'—'} ${u}</div></div>`;
+  return `<div class="pg">
+  <div class="pg-top" style="padding-bottom:20px"><div class="pg-bar"><div class="pg-logo">BETTER<span style="color:${s.accent}">FIT</span></div><div class="pg-who">${esc(c.nom)}${c.semaine?` · Semaine ${esc(c.semaine)}`:''}</div></div></div>
+  <div class="pg-main" style="gap:20px">
+    <div style="display:flex;gap:20px;height:290px">
+      <div class="pg-dark" style="flex:1;border-radius:22px;padding:28px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+        <div style="position:absolute;right:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;background:${s.accent};opacity:.6"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;position:relative">
+          <div class="pg-eyebrow" style="color:#C4ADFF">Recette${R.categorie?` · ${esc(R.categorie)}`:''}</div>
+          <h1 style="font-size:28px;letter-spacing:-.6px;line-height:1.12">${esc(R.nom) || 'Recette'}</h1></div>
+        ${meta.length?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;position:relative">${meta.map(([l,v])=>`<div style="border-top:1px solid #5A44A0;padding-top:10px"><div class="pg-lab" style="color:#B9A8E6;letter-spacing:1px">${l}</div><div style="font-size:15px;font-weight:700">${esc(v)}</div></div>`).join('')}</div>`:''}
+      </div>
+      ${R.photo?`<img src="/_blob/${esc(R.photo)}" alt="" style="width:260px;height:290px;object-fit:cover;border-radius:22px;flex-shrink:0">`:''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">${mac('Calories',R.kcal,'kcal',true)}${mac('Protéines',R.p,'g')}${mac('Glucides',R.g,'g')}${mac('Lipides',R.l,'g')}</div>
+      <div style="font-size:11px;color:#6E6290">Valeurs par portion</div></div>
+    <div style="display:flex;gap:20px">
+      <div class="pg-card" style="width:250px;flex-shrink:0;padding:20px;display:flex;flex-direction:column;gap:2px;align-self:flex-start">
+        <h2 style="font-size:15px;margin-bottom:8px">Ingrédients</h2>
+        ${ings.map((it,j)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;${j<ings.length-1?'border-bottom:1px solid #F0EAFB':''}"><div>${esc(it.nom)}</div><div style="font-weight:700;color:#3A1A8C;text-align:right">${esc(it.qte)}</div></div>`).join('')}
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:15px">Préparation</h2>
+        ${steps.map((t,j)=>`<div style="display:flex;gap:14px;align-items:flex-start"><div style="width:30px;height:30px;border-radius:50%;background:#1E0D45;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${j+1}</div><div style="line-height:1.55;padding-top:5px;white-space:pre-line">${esc(t)}</div></div>`).join('')}
+        ${R.astuce?`<div class="pg-soft" style="border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;margin-top:6px"><div class="pg-lab" style="color:#3A1A8C">L’astuce du coach</div><div style="white-space:pre-line">${esc(R.astuce)}</div></div>`:''}
+      </div></div>
+  </div>${foot(s,n)}</div>`;
+}
+
+const RENDER = {profil:pageProfil, journee:pageJournee, deficit:pageDeficit, courses:pageCourses, recette:pageRecette};
+function buildPages(c){ return mode === 'muscu' ? buildPagesMuscu(c) : buildPagesNutri(c); }
+function buildPagesNutri(c){
+  const k = compute(c); let n = 0;
+  return PAGES.filter(([key]) => c.pages[key] !== false).map(([key,label]) => ({key, label, html: RENDER[key](c, k, settings, ++n)}));
+}
+
+/* ---------- Aperçu ---------- */
+function queuePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(renderPreview, 150); }
+function renderPreview(){
+  const pv = $('#preview'); const c = current();
+  if(!c){ pv.innerHTML = ''; return; }
+  const pages = buildPages(c);
+  if(!pages.length){ pv.innerHTML = '<div class="note">Aucune page sélectionnée. Coche des pages dans « Pages à inclure ».</div>'; return; }
+  pv.innerHTML = pages.map((p,i)=>`<div class="page-wrap" data-key="${p.key}"><div class="page-label"><span>${String(i+1).padStart(2,'0')} · ${p.label}</span><span class="overflow-badge" hidden>Contenu trop long pour la page</span></div><div class="page-shell"><div class="scaler">${p.html}</div></div></div>`).join('');
+  fitPreview();
+  requestAnimationFrame(()=>{
+    pv.querySelectorAll('.page-wrap').forEach(w => {
+      const pg = w.querySelector('.pg');
+      w.querySelector('.overflow-badge').hidden = !(pg && pg.scrollHeight > 1125);
+    });
+  });
+}
+function fitPreview(){
+  const pv = $('#preview'); const w = Math.min(pv.clientWidth, 794);
+  const sc = w / 794;
+  pv.querySelectorAll('.page-shell').forEach(sh => {
+    sh.style.width = (794*sc) + 'px'; sh.style.height = (1123*sc) + 'px';
+    sh.querySelector('.scaler').style.transform = `scale(${sc})`;
+  });
+}
+window.addEventListener('resize', () => { clearTimeout(fitPreview._t); fitPreview._t = setTimeout(fitPreview, 100); });
+
+/* ---------- Export PDF ---------- */
+$('#btnPdf').addEventListener('click', async () => {
+  const c = current(); if(!c) return;
+  if(!downloads){ toast('L’export de fichiers n’est pas disponible dans cette vue.'); return; }
+  if(!window.html2canvas || !window.jspdf){ toast('Le module PDF n’a pas pu se charger. Recharge la page.'); return; }
+  const btn = $('#btnPdf'); btn.disabled = true; const old = btn.textContent; btn.textContent = 'Génération…';
+  const stage = $('#exportStage');
+  try{
+    const pages = buildPages(c);
+    stage.innerHTML = pages.map(p => p.html).join('');
+    try{ await document.fonts.ready; }catch(e){}
+    await Promise.all([...stage.querySelectorAll('img')].map(img => img.complete ? 0 : new Promise(r => { img.onload = img.onerror = r; })));
+    const pdf = new window.jspdf.jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+    const nodes = [...stage.querySelectorAll('.pg')];
+    for(let i=0;i<nodes.length;i++){
+      btn.textContent = `Page ${i+1}/${nodes.length}…`;
+      const canvas = await window.html2canvas(nodes[i], {scale:2, useCORS:true, backgroundColor:'#F7F4FC', width:794, height:1123, windowWidth:1200, logging:false});
+      if(i>0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+    }
+    const safe = (c.nom || 'client').replace(/[^\p{L}\p{N} _-]/gu,'').trim().replace(/\s+/g,'-');
+    const blob = pdf.output('blob');
+    await downloads.save({filename:`Programme-${mode==='muscu'?'muscu':'nutrition'}-${safe}-S${c.semaine||''}.pdf`, data:blob});
+    toast('PDF enregistré.');
+  }catch(e){
+    if(e && e.code === 'declined') toast('Export annulé.');
+    else if(e && e.code === 'rate_limited') toast('Une fenêtre d’enregistrement est déjà ouverte.');
+    else toast('L’export a échoué' + (e && e.code ? ` (${e.code})` : '') + '. Réessaie.');
+  }finally{
+    stage.innerHTML = ''; btn.disabled = false; btn.textContent = old;
+  }
+});
+
+/* ---------- Mascotte : singe violet sans yeux (rig SVG paramétrique, vue de profil) ---------- */
+const MC = {main:'#7B4FE6', far:'#5A35B8', light:'#D4C3FF', ink:'#2A1758', ear:'#B79CF5', hub:'#B9A8E6'};
+/* angle a (degrés) -> vecteur : 0 = vers le bas, 90 = vers l'avant, 180 = vers le haut, -90 = vers l'arrière */
+const DIR = a => [Math.sin(a*Math.PI/180), Math.cos(a*Math.PI/180)];
+const POSES = {
+  stand:   {label:'Debout', hip:[50,60], torso:180, arms:[[10,6],[-6,-4]], legs:[[3,-2],[-3,2]], prop:'none'},
+  flex:    {label:'Biceps (fierté)', hip:[50,60], torso:180, arms:[[95,172],[78,165]], legs:[[6,-2],[-6,2]], prop:'none'},
+  squat:   {label:'Squat', hip:[44,75], torso:145, arms:[[-50,165],[-45,160]], legs:[[80,-30],[75,-28]], prop:'barbell'},
+  hinge:   {label:'Soulevé de terre', hip:[38,62], torso:115, arms:[[0,0],[3,1]], legs:[[30,-10],[26,-8]], prop:'barbell'},
+  bench:   {label:'Développé couché', hip:[66,66], torso:-90, arms:[[180,180],[176,178]], legs:[[60,0],[54,4]], prop:'barbell', bench:[20,72,52], notail:true},
+  pushup:  {label:'Pompes', hip:[46,77], torso:117.7, arms:[[0,0],[3,0]], legs:[[-62.3,-62.3],[-60,-60]], feet:[-100,-100], prop:'none'},
+  plank:   {label:'Gainage', hip:[44,84], torso:104, arms:[[0,90],[2,92]], legs:[[-76,-76],[-74,-74]], feet:[-100,-100], prop:'none'},
+  press:   {label:'Développé militaire', hip:[50,61], torso:180, arms:[[172,178],[166,176]], legs:[[4,-2],[-4,2]], prop:'dumbbells'},
+  row:     {label:'Rowing', hip:[38,63], torso:125, arms:[[-35,25],[-28,18]], legs:[[22,-12],[18,-10]], prop:'dumbbell'},
+  pullup:  {label:'Traction', hip:[50,52], torso:180, arms:[[25,175],[15,170]], legs:[[12,-40],[6,-35]], prop:'bar'},
+  lunge:   {label:'Fente', hip:[46,74.6], torso:180, arms:[[3,0],[-3,0]], legs:[[85,0],[-20,-90]], feet:[90,-90], prop:'dumbbells'},
+  curl:    {label:'Curl biceps', hip:[50,60], torso:180, arms:[[8,160],[2,30]], legs:[[3,-2],[-3,2]], prop:'dumbbells'},
+  triceps: {label:'Extension triceps', hip:[50,61], torso:180, arms:[[168,-12],[160,-18]], legs:[[4,-2],[-4,2]], prop:'dumbbell'},
+  bridge:  {label:'Hip thrust', hip:[58,67.5], torso:-95, arms:[[15,40],[10,35]], legs:[[59,0],[54,3]], prop:'hipbar', bench:[10,72,30], notail:true},
+  raise:   {label:'Élévations', hip:[50,61], torso:180, arms:[[95,95],[82,86]], legs:[[3,-2],[-3,2]], prop:'dumbbells'},
+  seated:  {label:'Machine assise', hip:[42,62], torso:172, arms:[[8,40],[4,35]], legs:[[90,75],[88,70]], prop:'none', seat:[24,65,30]},
+  cardio:  {label:'Cardio / course', hip:[50,57], torso:168, arms:[[-40,60],[45,150]], legs:[[50,-20],[-30,-80]], prop:'none'}
+};
+const POSE_RULES = [
+  ['seated',  /(leg ?curl|leg ?extension|presse|machine|adducteur|abducteur|mollet assis)/],
+  ['triceps', /(triceps|barre au front|nuque|kickback|dips)/],
+  ['press',   /(militaire|overhead|epaule|arnold|developpe assis)/],
+  ['bench',   /(couche|bench|developpe|pec|ecarte)/],
+  ['pullup',  /(traction|pull.?up|chin|tirage vertical|poulie haute|lat)/],
+  ['row',     /(row|tirage horizontal|tirage|oiseau|face pull)/],
+  ['hinge',   /(souleve|deadlift|rdl|roumain|good morning|swing)/],
+  ['lunge',   /(fente|lunge|bulgare|split|step)/],
+  ['squat',   /(squat|goblet)/],
+  ['curl',    /(curl|biceps|marteau)/],
+  ['bridge',  /(hip thrust|thrust|pont|bridge|fessier)/],
+  ['pushup',  /(pompe|push.?up)/],
+  ['plank',   /(gainage|planche|plank|abdo|crunch|releve de jambes|russian)/],
+  ['raise',   /(elevation|lateral|frontal|raise)/],
+  ['cardio',  /(velo|course|tapis|rameur|cardio|corde|burpee|jump|saut|marche|elliptique|echauffement)/]
+];
+function poseFor(ex){
+  if(ex && ex.pose && ex.pose !== 'auto' && POSES[ex.pose]) return ex.pose;
+  const s = String(ex && ex.nom || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  for(const [k, re] of POSE_RULES) if(re.test(s)) return k;
+  return 'stand';
+}
+function mascotSVG(key, size, label){
+  const P = POSES[key] || POSES.stand;
+  const add = (p, a, l) => { const d = DIR(a); return [p[0] + d[0]*l, p[1] + d[1]*l]; };
+  const H = P.hip, S = add(H, P.torso, 26), C = add(S, P.torso, 11);
+  const rot = 180 - P.torso;
+  const f = n => n.toFixed(1);
+  const line = (a, b, w, col) => `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const arm = (i, col) => {
+    const sh = i ? [S[0]-1.5, S[1]-1] : S;
+    const e = add(sh, P.arms[i][0], 14), h = add(e, P.arms[i][1], 13);
+    return {svg: line(sh, e, 6, col) + line(e, h, 5.5, col) + `<circle cx="${f(h[0])}" cy="${f(h[1])}" r="3.4" fill="${i?MC.far:MC.far}"/>`, hand:h};
+  };
+  const leg = (i, col) => {
+    const hp = i ? [H[0]-1.5, H[1]] : H;
+    const k = add(hp, P.legs[i][0], 16), a = add(k, P.legs[i][1], 16);
+    const t = add(a, (P.feet ? P.feet[i] : 90), 6);
+    return line(hp, k, 7, col) + line(k, a, 6.5, col) + line(a, t, 5, col);
+  };
+  const plate = (p, r) => `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="${r}" fill="${MC.ink}"/><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${r*0.28}" fill="${MC.hub}"/>`;
+  const farArm = arm(1, MC.far), nearArm = arm(0, MC.main);
+  let back = '', front = '';
+  if(P.bench){ const [x,y,w] = P.bench; back += `<rect x="${x}" y="${y}" width="${w}" height="5" rx="2" fill="${MC.ink}"/><rect x="${x+4}" y="${y+5}" width="3" height="${93-y-5}" fill="${MC.ink}"/><rect x="${x+w-7}" y="${y+5}" width="3" height="${93-y-5}" fill="${MC.ink}"/>`; }
+  if(P.seat){ const [x,y,w] = P.seat; back += `<rect x="${x}" y="${y+2}" width="${w}" height="6" rx="2" fill="${MC.ink}"/><rect x="${x+w/2-2}" y="${y+8}" width="4" height="${93-y-8}" fill="${MC.ink}"/><rect x="${x-2}" y="${y-26}" width="5" height="32" rx="2" fill="${MC.ink}"/>`; }
+  if(P.prop === 'bar'){ const y = nearArm.hand[1]; back += `<rect x="14" y="${f(y-2)}" width="72" height="4" rx="2" fill="${MC.ink}"/><rect x="14" y="${f(y)}" width="3" height="${f(93-y)}" fill="${MC.ink}"/><rect x="83" y="${f(y)}" width="3" height="${f(93-y)}" fill="${MC.ink}"/>`; }
+  if(P.prop === 'barbell') front += plate(nearArm.hand, 9);
+  if(P.prop === 'dumbbell') front += plate(nearArm.hand, 4.6);
+  if(P.prop === 'dumbbells'){ back += plate(farArm.hand, 4.6); front += plate(nearArm.hand, 4.6); }
+  if(P.prop === 'hipbar') front += plate([H[0]+2, H[1]-11], 9);
+  const tail = `<g transform="rotate(${f(rot)} ${f(H[0])} ${f(H[1])})"><path d="M${f(H[0]-3)} ${f(H[1]-2)} C${f(H[0]-16)} ${f(H[1]+6)} ${f(H[0]-26)} ${f(H[1]-4)} ${f(H[0]-21)} ${f(H[1]-14)} S${f(H[0]-11)} ${f(H[1]-17)} ${f(H[0]-13)} ${f(H[1]-11)}" fill="none" stroke="${MC.far}" stroke-width="3.6" stroke-linecap="round"/></g>`;
+  const body = `<g transform="rotate(${f(rot)} ${f(H[0])} ${f(H[1])})">${line(H,[H[0],H[1]-26],15,MC.main)}<ellipse cx="${f(H[0]+2.6)}" cy="${f(H[1]-12)}" rx="4.6" ry="9" fill="${MC.light}"/></g>`;
+  const head = `<g transform="translate(${f(C[0])} ${f(C[1])}) rotate(${f(rot)})">
+    <circle cx="-6.2" cy="-4.6" r="4" fill="${MC.main}"/><circle cx="-6.2" cy="-4.6" r="2.2" fill="${MC.ear}"/>
+    <path d="M-2 -9.6 q1.6 -3 4 -1.6 q-0.4 -2.6 2.6 -2" fill="none" stroke="${MC.main}" stroke-width="1.8" stroke-linecap="round"/>
+    <circle r="9.6" fill="${MC.main}"/>
+    <ellipse cx="4.8" cy="2.2" rx="5.8" ry="4.8" fill="${MC.light}"/>
+    <path d="M5.4 4.4 q2.2 1.8 4.4 0" fill="none" stroke="${MC.ink}" stroke-width="1.1" stroke-linecap="round"/></g>`;
+  const shadow = `<ellipse cx="${f(H[0])}" cy="93.5" rx="24" ry="2.4" fill="${MC.ink}" opacity="0.12"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" ${label?`role="img" aria-label="${label}"`:'aria-hidden="true"'}>${shadow}${back}${P.notail?'':tail}${leg(1,MC.far)}${farArm.svg}${body}${leg(0,MC.main)}${head}${nearArm.svg}${front}</svg>`;
+}
+
+/* ---------- Musculation : modèle ---------- */
+const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const NIVEAUX = ['Débutant','Intermédiaire','Avancé'];
+const MPAGES = [['programme','Programme & planning'],['seances','Fiches séances'],['suivi','Suivi des charges'],['bases','Les bases']];
+const LETTRE = i => String.fromCharCode(65 + i);
+const newEx = (nom='', muscles='', series='3', reps='10', repos='90 s', tempo='', consignes='') => ({nom, pose:'auto', muscles, series, reps, charge:'', repos, tempo, consignes});
+function defaultMuscu(){
+  return {
+    objectif:'Recomposition corporelle', niveau:'Intermédiaire', lieu:'Salle de sport', duree:'60', cycle:4, motCoach:'',
+    planning:[0,-1,1,-1,2,-1,-1],
+    seances:[
+      {nom:'Bas du corps', focus:'Quadriceps, fessiers, ischios', duree:'60',
+       echauffement:'5 min de vélo, puis 2 séries légères du premier exercice.', retour:'5 min d’étirements des jambes.',
+       exercices:[
+        newEx('Squat barre','Quadriceps, fessiers','4','6–8','2 min','3-1-1','Hanches sous les genoux, dos neutre, genoux dans l’axe des pieds.'),
+        newEx('Soulevé de terre roumain','Ischios, fessiers','3','8–10','2 min','3-0-1','Barre près des jambes, pousse les hanches vers l’arrière.'),
+        newEx('Fentes avec haltères','Quadriceps, fessiers','3','10 / jambe','90 s','2-0-1','Genou avant au-dessus de la cheville, buste droit.'),
+        newEx('Hip thrust','Fessiers','3','10–12','90 s','2-1-1','Menton rentré, serre les fessiers 1 s en haut.'),
+        newEx('Gainage planche','Abdominaux, sangle','3','40 s','45 s','','Corps aligné, ne creuse pas le bas du dos.')]},
+      {nom:'Haut du corps · poussée', focus:'Pectoraux, épaules, triceps', duree:'55',
+       echauffement:'5 min de rameur, rotations d’épaules, 2 séries légères au développé.', retour:'Étirements pectoraux et épaules.',
+       exercices:[
+        newEx('Développé couché','Pectoraux, triceps','4','6–8','2 min','3-1-1','Omoplates serrées, pieds ancrés au sol.'),
+        newEx('Développé militaire haltères','Épaules','3','8–10','90 s','2-0-1','Gainé, sans cambrer le dos.'),
+        newEx('Pompes','Pectoraux, triceps','3','max − 2','60 s','2-0-1','Coudes à 45° du corps.'),
+        newEx('Élévations frontales','Épaules (avant)','3','12–15','60 s','2-0-1','Charge légère, monte jusqu’à l’horizontale.'),
+        newEx('Extension triceps haltère','Triceps','3','10–12','60 s','2-0-1','Coudes fixes et serrés.')]},
+      {nom:'Haut du corps · tirage', focus:'Dos, biceps', duree:'55',
+       echauffement:'5 min de rameur, puis tractions assistées légères.', retour:'Étirements du dos et des bras.',
+       exercices:[
+        newEx('Tractions','Grand dorsal, biceps','4','6–8','2 min','2-0-1','Poitrine vers la barre, descente contrôlée. Élastique si besoin.'),
+        newEx('Rowing haltère','Dos, arrière d’épaule','3','10 / bras','90 s','2-1-1','Tire le coude vers la hanche.'),
+        newEx('Curl biceps','Biceps','3','10–12','60 s','2-0-1','Sans balancer le buste.'),
+        newEx('Gainage planche','Abdominaux, sangle','3','45 s','45 s','','Respiration calme, bassin neutre.')]}
+    ],
+    pages:{programme:true, seances:true, suivi:true, bases:true}
+  };
+}
+function migrateMuscu(m){
+  const base = defaultMuscu();
+  if(!m) return base;
+  const out = Object.assign(base, m);
+  out.pages = Object.assign(defaultMuscu().pages, m.pages || {});
+  if(!Array.isArray(out.planning) || out.planning.length !== 7) out.planning = [-1,-1,-1,-1,-1,-1,-1];
+  return out;
+}
+
+/* ---------- Musculation : éditeur ---------- */
+function poseOptions(sel){
+  return `<option value="auto"${sel==='auto'||!sel?' selected':''}>Auto (d’après le nom)</option>` +
+    Object.entries(POSES).map(([k,p]) => `<option value="${k}"${sel===k?' selected':''}>${p.label}</option>`).join('');
+}
+function renderEditorMuscu(c){
+  const M = c.muscu;
+  const sProg = sec('m-prog','Programme','',`
+    <div class="grid">${f('Objectif','muscu.objectif',M.objectif)}
+      <div class="field"><label for="f-m-niv">Niveau</label><select id="f-m-niv" data-path="muscu.niveau">${NIVEAUX.map(n=>`<option${M.niveau===n?' selected':''}>${n}</option>`).join('')}</select></div></div>
+    <div class="grid g3">${f('Lieu','muscu.lieu',M.lieu)}${f('Durée séance (min)','muscu.duree',M.duree,'number')}${f('Cycle (semaines)','muscu.cycle',M.cycle,'number','min="1" max="12"')}</div>
+    ${ta('Le mot du coach','muscu.motCoach',M.motCoach,'Message pour démarrer le cycle.')}
+    <div class="subhead">Toi (commun à tous les clients)</div>
+    <div class="grid">${f('Nom du coach','settings.coach',settings.coach)}${f('Contact','settings.contact',settings.contact,'text','placeholder="contact@betterfit.fr"')}</div>
+  `);
+  const sPlan = sec('m-plan','Planning de la semaine', `${M.seances.length} séance${M.seances.length>1?'s':''}`, `
+    <div class="grid">${JOURS.map((j,d)=>`<div class="field"><label for="f-plan-${d}">${j}</label><select id="f-plan-${d}" data-path="muscu.planning.${d}">
+      <option value="-1"${+M.planning[d]===-1?' selected':''}>Repos</option>
+      ${M.seances.map((s,i)=>`<option value="${i}"${+M.planning[d]===i?' selected':''}>Séance ${LETTRE(i)} · ${esc(s.nom)}</option>`).join('')}</select></div>`).join('')}</div>
+  `);
+  const sSeances = M.seances.map((s,i)=> sec('m-s'+i, `Séance ${LETTRE(i)}`, esc(s.nom), `
+    <div class="grid">${f('Nom de la séance',`muscu.seances.${i}.nom`,s.nom)}${f('Durée (min)',`muscu.seances.${i}.duree`,s.duree,'number')}</div>
+    ${f('Muscles ciblés',`muscu.seances.${i}.focus`,s.focus)}
+    ${f('Échauffement',`muscu.seances.${i}.echauffement`,s.echauffement)}
+    ${s.exercices.map((e,j)=>`<div class="block">
+      <div class="block-head" style="align-items:center">
+        <div class="ex-thumb" id="thumb-${i}-${j}">${mascotSVG(poseFor(e),56)}</div>
+        <div class="field" style="flex:1"><label for="f-ex-${i}-${j}">${LETTRE(i)}${j+1} · Exercice</label><input id="f-ex-${i}-${j}" type="text" data-path="muscu.seances.${i}.exercices.${j}.nom" value="${esc(e.nom)}"></div>
+        <div style="display:flex;flex-direction:column">
+          <button type="button" class="icon-btn" data-action="ex-up" data-i="${i}" data-j="${j}" aria-label="Monter l’exercice"${j===0?' disabled':''}>${UP}</button>
+          <button type="button" class="icon-btn" data-action="ex-down" data-i="${i}" data-j="${j}" aria-label="Descendre l’exercice"${j===s.exercices.length-1?' disabled':''}>${DOWN}</button>
+        </div>
+        <button type="button" class="icon-btn" data-action="ex-del" data-i="${i}" data-j="${j}" aria-label="Supprimer l’exercice">${X}</button>
+      </div>
+      <div class="grid">
+        <div class="field"><label for="f-pose-${i}-${j}">Pose de la mascotte</label><select id="f-pose-${i}-${j}" data-path="muscu.seances.${i}.exercices.${j}.pose">${poseOptions(e.pose)}</select></div>
+        ${f('Muscles',`muscu.seances.${i}.exercices.${j}.muscles`,e.muscles)}
+      </div>
+      <div class="grid g3">
+        ${f('Séries',`muscu.seances.${i}.exercices.${j}.series`,e.series)}
+        ${f('Répétitions',`muscu.seances.${i}.exercices.${j}.reps`,e.reps)}
+        ${f('Charge',`muscu.seances.${i}.exercices.${j}.charge`,e.charge,'text','placeholder="à noter"')}
+        ${f('Repos',`muscu.seances.${i}.exercices.${j}.repos`,e.repos)}
+        ${f('Tempo',`muscu.seances.${i}.exercices.${j}.tempo`,e.tempo,'text','placeholder="3-1-1"')}
+      </div>
+      ${f('Consignes',`muscu.seances.${i}.exercices.${j}.consignes`,e.consignes)}
+    </div>`).join('')}
+    <div><button type="button" class="btn small" data-action="ex-add" data-i="${i}">+ Exercice</button></div>
+    ${f('Retour au calme',`muscu.seances.${i}.retour`,s.retour)}
+    <div><button type="button" class="btn small danger" data-action="seance-del" data-i="${i}">Supprimer la séance ${LETTRE(i)}</button></div>
+  `)).join('');
+  const sAdd = `<div><button type="button" class="btn" data-action="seance-add">+ Ajouter une séance</button></div>`;
+  const sPages = sec('m-pages','Pages à inclure','',`<div class="toggles">${MPAGES.map(([k2,l])=>`<label><input type="checkbox" data-path="muscu.pages.${k2}" ${M.pages[k2]!==false?'checked':''}> ${l}</label>`).join('')}</div>`);
+  return sProg + sPlan + sSeances + sAdd + sPages;
+}
+function muscuAction(c, a, i, j){
+  const M = c.muscu, S = M.seances;
+  switch(a){
+    case 'seance-add': S.push({nom:'Nouvelle séance', focus:'', duree:M.duree, echauffement:'', retour:'', exercices:[newEx(),newEx(),newEx()]}); openSecs.add('m-s'+(S.length-1)); return true;
+    case 'seance-del':
+      S.splice(i,1);
+      M.planning = M.planning.map(v => { v = +v; return v === i ? -1 : v > i ? v - 1 : v; });
+      return true;
+    case 'ex-add': S[i].exercices.push(newEx()); return true;
+    case 'ex-del': S[i].exercices.splice(j,1); return true;
+    case 'ex-up': if(j>0){ const e = S[i].exercices; [e[j-1],e[j]] = [e[j],e[j-1]]; } return true;
+    case 'ex-down': { const e = S[i].exercices; if(j<e.length-1){ [e[j+1],e[j]] = [e[j],e[j+1]]; } return true; }
+  }
+  return false;
+}
+
+/* ---------- Musculation : pages ---------- */
+function mHead(c, s, eyebrow, title, right=''){
+  return head(c, s, eyebrow, title, right);
+}
+function joursDe(M, i){ return JOURS.filter((_,d)=> +M.planning[d] === i); }
+
+function pageProgramme(c, s, n){
+  const M = c.muscu;
+  const nb = M.planning.filter(v => +v >= 0).length;
+  const dayTile = (j, d) => {
+    const v = +M.planning[d], sea = M.seances[v];
+    return v >= 0 && sea
+      ? `<div style="background:#1E0D45;color:#fff;border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:6px;min-height:104px">
+          <div class="pg-lab" style="color:#B9A8E6;letter-spacing:1px;font-size:10px">${j.slice(0,3)}</div>
+          <div class="disp" style="font-size:22px;color:#C4ADFF">${LETTRE(v)}</div>
+          <div style="font-size:11px;font-weight:600;line-height:1.3">${esc(sea.nom)}</div></div>`
+      : `<div class="pg-soft" style="padding:12px 10px;display:flex;flex-direction:column;gap:6px;min-height:104px">
+          <div class="pg-lab" style="color:#6E6290;letter-spacing:1px;font-size:10px">${j.slice(0,3)}</div>
+          <div style="font-size:12px;font-weight:600;color:#6E6290;margin-top:auto">Repos</div></div>`;
+  };
+  return `<div class="pg">
+  <div class="pg-dark" style="padding:48px 56px 40px;display:flex;flex-direction:column;gap:30px;position:relative;overflow:hidden;min-height:400px">
+    <div style="position:absolute;right:-40px;top:70px;width:330px;height:330px;border-radius:50%;background:${s.accent};opacity:.55"></div>
+    <div style="position:absolute;right:30px;top:96px">${mascotSVG('flex',300)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;position:relative">
+      <div class="disp" style="font-weight:800;font-size:22px;letter-spacing:-.5px">BETTER<span style="color:#C4ADFF">FIT</span></div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#D9CCFF">Coaching musculation</div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;position:relative;max-width:400px">
+      <div class="pg-lab" style="font-size:13px;letter-spacing:3px;color:#C4ADFF">Programme musculation</div>
+      <h1 style="font-size:42px;line-height:1.05;letter-spacing:-1px">${esc(c.nom)}</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;position:relative;max-width:400px;margin-top:auto">
+      ${[['Objectif',M.objectif],['Niveau',M.niveau],['Cycle',`${fmt(num(M.cycle))} semaines`],['Coach',s.coach||'—']].map(([l,v])=>`<div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #5A44A0;padding-top:10px"><div class="pg-lab" style="color:#B9A8E6;letter-spacing:1.5px">${l}</div><div style="font-size:15px;font-weight:600">${esc(v||'—')}</div></div>`).join('')}
+    </div></div>
+  <div class="pg-main" style="padding-top:30px;gap:22px">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+      ${[['Fréquence',`${nb} séance${nb>1?'s':''} / semaine`],['Durée',`${esc(M.duree||'—')} min par séance`],['Lieu',esc(M.lieu||'—')]].map(([l,v],i)=>`<div style="${i===0?`background:${s.accent};color:#fff;border-radius:18px;`:'background:#fff;border:1px solid #E6DDF7;border-radius:18px;'}padding:16px 18px;display:flex;flex-direction:column;gap:4px"><div class="pg-lab" style="color:${i===0?'#EFE8FF':'#5B2FC9'}">${l}</div><div style="font-size:16px;font-weight:700">${v}</div></div>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:18px">Ta semaine type</h2>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px">${JOURS.map(dayTile).join('')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:18px">Tes séances</h2>
+      ${M.seances.map((se,i)=>`<div class="pg-card" style="padding:12px 18px;display:flex;align-items:center;gap:16px">
+        <div class="disp" style="width:38px;height:38px;border-radius:12px;background:#EDE6FA;color:${s.accent};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${LETTRE(i)}</div>
+        <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14px">${esc(se.nom)}</div><div style="font-size:12px;color:#6E6290">${esc(se.focus)}</div></div>
+        <div style="font-size:12px;color:#3A1A8C;font-weight:700;text-align:right">${se.exercices.length} exercices${joursDe(M,i).length?`<br><span style="color:#6E6290;font-weight:600">${joursDe(M,i).join(', ')}</span>`:''}</div></div>`).join('')}
+    </div>
+    ${M.motCoach?`<div class="pg-card" style="border:1px dashed #B79CF5;padding:16px 22px;display:flex;flex-direction:column;gap:6px"><div class="pg-lab" style="color:#5B2FC9">Le mot du coach</div><div style="color:#3B3054;line-height:1.55;white-space:pre-line">${esc(M.motCoach)}</div></div>`:''}
+  </div>${foot(s,n)}</div>`;
+}
+
+function pageSeance(c, s, n, i){
+  const M = c.muscu, se = M.seances[i], jours = joursDe(M, i);
+  const chip = `<div class="pg-chip"><div><span>Durée</span><span class="num">${esc(se.duree||M.duree||'—')} min</span></div><div><span>Exercices</span><span class="num">${se.exercices.length}</span></div>${jours.length?`<div><span>Jour${jours.length>1?'s':''}</span><span>${jours.map(j=>j.slice(0,3)).join(' · ')}</span></div>`:''}</div>`;
+  const stat = (l, v, ph) => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><div style="font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6E6290">${l}</div><div class="num" style="font-size:14px;font-weight:700;${v?'':'color:#B3A8CC'}">${v?esc(v):ph}</div></div>`;
+  const ex = se.exercices.map((e,j)=>`<div class="pg-card" style="display:flex;gap:16px;padding:8px 18px 8px 8px;align-items:center">
+      <div style="width:94px;height:94px;flex-shrink:0;background:#EDE6FA;border-radius:14px;display:flex;align-items:center;justify-content:center">${mascotSVG(poseFor(e),92)}</div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="disp" style="font-size:13px;color:${s.accent}">${LETTRE(i)}${j+1}</span><span style="font-weight:800;font-size:15px">${esc(e.nom)}</span><span style="font-size:12px;color:#6E6290">${esc(e.muscles)}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:6px 0;border-top:1px solid #F0EAFB;border-bottom:1px solid #F0EAFB">
+          ${stat('Séries',e.series,'—')}${stat('Répétitions',e.reps,'—')}${stat('Charge',e.charge,'____ kg')}${stat('Repos',e.repos,'—')}${stat('Tempo',e.tempo,'—')}</div>
+        ${e.consignes?`<div style="font-size:12px;color:#4A3F66;line-height:1.4">${esc(e.consignes)}</div>`:''}
+      </div></div>`).join('');
+  return `<div class="pg">${head(c,s,`Séance ${LETTRE(i)}`,esc(se.nom),chip)}
+  <div class="pg-main" style="gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:4px">
+      <div class="pg-soft" style="padding:12px 16px;display:flex;flex-direction:column;gap:3px"><div class="pg-lab" style="color:#3A1A8C;letter-spacing:1.2px">Muscles ciblés</div><div style="font-weight:600">${esc(se.focus)||'—'}</div></div>
+      <div class="pg-soft" style="padding:12px 16px;display:flex;flex-direction:column;gap:3px"><div class="pg-lab" style="color:#3A1A8C;letter-spacing:1.2px">Échauffement</div><div>${esc(se.echauffement)||'—'}</div></div>
+    </div>
+    ${ex}
+    ${se.retour?`<div style="display:flex;gap:12px;align-items:center;padding:10px 16px;border-radius:14px;border:1px dashed #B79CF5;margin-top:4px"><div class="pg-lab" style="color:#5B2FC9;white-space:nowrap">Retour au calme</div><div>${esc(se.retour)}</div></div>`:''}
+  </div>${foot(s,n)}</div>`;
+}
+
+function pageSuivi(c, s, n){
+  const M = c.muscu;
+  const weeks = Math.max(1, Math.min(6, Math.round(num(M.cycle)) || 4));
+  const rows = [];
+  M.seances.forEach((se,i) => se.exercices.forEach((e,j) => { if((e.nom||'').trim()) rows.push({code:`${LETTRE(i)}${j+1}`, nom:e.nom, prescr:[e.series&&e.reps?`${e.series} × ${e.reps}`:''].join('')}); }));
+  const cols = `minmax(0,2.4fr) repeat(${weeks},minmax(0,1fr))`;
+  return `<div class="pg">${head(c,s,'Progression','Suivi des charges')}
+  <div class="pg-main" style="gap:14px">
+    <p style="margin:-6px 0 0;color:#3B3054;font-size:14px">À chaque séance, note la charge utilisée et les répétitions réussies sur ta meilleure série. Ex. : <b>40 kg × 8</b>.</p>
+    <div class="pg-card" style="padding:6px 18px 10px">
+      <div style="display:grid;grid-template-columns:${cols};gap:10px;padding:10px 0;border-bottom:2px solid ${s.accent};font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6E6290">
+        <div>Exercice</div>${Array.from({length:weeks},(_,w)=>`<div style="text-align:center">Semaine ${w+1}</div>`).join('')}</div>
+      ${rows.map((r,k)=>`<div style="display:grid;grid-template-columns:${cols};gap:10px;align-items:center;min-height:36px;${k<rows.length-1?'border-bottom:1px solid #F0EAFB':''}">
+        <div style="display:flex;gap:8px;align-items:baseline;min-width:0"><span class="disp" style="font-size:11px;color:${s.accent}">${r.code}</span><span style="font-weight:600">${esc(r.nom)}</span><span style="font-size:11px;color:#6E6290;white-space:nowrap">${esc(r.prescr)}</span></div>
+        ${Array.from({length:weeks},()=>`<div style="height:22px;border-bottom:1px solid #C9BBEA;margin:0 4px"></div>`).join('')}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+      <div class="pg-soft" style="padding:14px 16px"><b>Quand augmenter ?</b> Dès que tu fais le haut de la fourchette de répétitions sur toutes les séries, avec une bonne technique.</div>
+      <div class="pg-soft" style="padding:14px 16px"><b>Une séance moins bonne ?</b> C’est normal. Note-la quand même : c’est la tendance sur plusieurs semaines qui compte.</div>
+    </div>
+  </div>${foot(s,n)}</div>`;
+}
+
+function pageBases(c, s, n){
+  const card = (pose, t, body) => `<div class="pg-card" style="padding:16px 20px 16px 12px;display:flex;gap:16px;align-items:center">
+    <div style="width:100px;height:100px;flex-shrink:0;background:#EDE6FA;border-radius:16px;display:flex;align-items:center;justify-content:center">${mascotSVG(pose,96)}</div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><h2 style="font-size:15px">${t}</h2><div style="color:#3B3054;line-height:1.5">${body}</div></div></div>`;
+  const rir = [['0','Échec','#1E0D45','#fff'],['1','1 rep en réserve',s.accent,'#fff'],['2','2 reps en réserve','#8F6BEA','#fff'],['3','3 reps en réserve','#C4ADFF','#1E0D45'],['4+','Trop facile','#EDE6FA','#3A1A8C']];
+  return `<div class="pg">${head(c,s,'Comprendre','Les bases')}
+  <div class="pg-main" style="gap:14px">
+    <p style="margin:-6px 0 0;color:#3B3054;font-size:14px;max-width:600px">Cinq repères pour progresser en sécurité et tirer le maximum de chaque séance.</p>
+    <div class="pg-card" style="padding:18px 22px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="font-size:15px">L’effort : les répétitions en réserve</h2><div style="font-size:12px;color:#6E6290">Combien de reps tu aurais encore pu faire ?</div></div>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${rir.map(([v,l,bg,col])=>`<div style="background:${bg};color:${col};border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><div class="disp" style="font-size:20px">${v}</div><div style="font-size:11px;font-weight:600">${l}</div></div>`).join('')}</div>
+      <div style="color:#3B3054">Sauf consigne contraire, arrête tes séries quand il te reste <b>1 à 3 répétitions en réserve</b>. Tu progresses sans t’épuiser.</div>
+    </div>
+    ${card('squat','Lire un tempo : 3-1-1','<b>3 s</b> pour descendre, <b>1 s</b> de pause en bas, <b>1 s</b> pour remonter. Un tempo contrôlé rend l’exercice plus efficace et plus sûr.')}
+    ${card('press','La progression','Quand tu atteins le haut de la fourchette de répétitions sur toutes les séries, augmente la charge d’environ <b>2,5 à 5 %</b> et repars du bas de la fourchette.')}
+    ${card('hinge','La technique avant la charge','Une charge que tu contrôles bat une charge que tu subis. En cas de douleur vive dans une articulation, arrête l’exercice et parles-en à ton coach.')}
+    ${card('stand','La récupération','Les muscles se construisent au repos : dors <b>7 à 9 h</b>, mange assez de protéines et laisse environ <b>48 h</b> avant de retravailler fort le même muscle.')}
+  </div>${foot(s,n)}</div>`;
+}
+
+function buildPagesMuscu(c){
+  const M = c.muscu, P = M.pages, s = settings; let n = 0; const out = [];
+  if(P.programme !== false) out.push({key:'programme', label:'Programme & planning', html:pageProgramme(c, s, ++n)});
+  if(P.seances !== false) M.seances.forEach((se,i) => out.push({key:'seance'+i, label:`Séance ${LETTRE(i)} · ${se.nom}`, html:pageSeance(c, s, ++n, i)}));
+  if(P.suivi !== false) out.push({key:'suivi', label:'Suivi des charges', html:pageSuivi(c, s, ++n)});
+  if(P.bases !== false) out.push({key:'bases', label:'Les bases', html:pageBases(c, s, ++n)});
+  return out;
+}
+
+/* ---------- Mode ---------- */
+function setMode(m){
+  mode = m;
+  try{ localStorage.setItem('bf-mode', m); }catch(e){}
+  $('#modeNutri').setAttribute('aria-pressed', m === 'nutri');
+  $('#modeMuscu').setAttribute('aria-pressed', m === 'muscu');
+  renderEditor(); renderPreview();
+}
+$('#modeNutri').addEventListener('click', () => setMode('nutri'));
+$('#modeMuscu').addEventListener('click', () => setMode('muscu'));
+$('#modeNutri').setAttribute('aria-pressed', mode === 'nutri');
+$('#modeMuscu').setAttribute('aria-pressed', mode === 'muscu');
+
+/* ---------- Démarrage ---------- */
+function migrate(d){
+  const base = newClient(d.nom);
+  const out = Object.assign(base, d);
+  out.recette = Object.assign(newClient().recette, d.recette || {});
+  out.pages = Object.assign(newClient().pages, d.pages || {});
+  out.muscu = migrateMuscu(d.muscu);
+  return out;
+}
+
+async function boot(){
+  renderSelect(); renderEditor(); renderPreview();
+  setStatus('Chargement…');
+  const use = window.claude && window.claude.use ? window.claude.use.bind(window.claude) : null;
+  if(use){
+    [db, assets, downloads] = await Promise.all([use('db'), use('assets'), use('downloads')].map(p => p.catch(()=>null)));
+  }
+  if(db){
+    try{
+      const [snap, st] = await Promise.all([db.collection('clients').get(), db.doc('settings/studio').get()]);
+      snap.docs.forEach(d => { clients[d.id] = migrate(clone(d.data())); });
+      if(st.exists) settings = Object.assign(settings, clone(st.data()));
+      setStatus('');
+    }catch(e){ setStatus('Fiches indisponibles'); }
+  }else{
+    setStatus('Sauvegarde indisponible');
+  }
+  let last = null; try{ last = localStorage.getItem('bf-last'); }catch(e){}
+  const ids = Object.keys(clients).sort((a,b)=> (clients[b].updatedAt||0)-(clients[a].updatedAt||0));
+  selectClient(last && clients[last] ? last : (ids[0] || null));
+}
+boot();
+})();
+</script>

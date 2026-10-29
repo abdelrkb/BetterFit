@@ -1,0 +1,24 @@
+# PostgreSQL pour le développement local. Lancé par `pnpm db:up`.
+# Le déploiement sur le VPS aura son propre fichier (étape 11).
+name: betterfit-dev
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: betterfit
+      POSTGRES_PASSWORD: betterfit
+      POSTGRES_DB: betterfit
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U betterfit -d betterfit']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:

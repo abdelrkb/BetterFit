@@ -1,0 +1,39 @@
+{
+  "name": "betterfit",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.25.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "node scripts/db-up.mjs",
+    "db:down": "node scripts/db-down.mjs",
+    "db:generate": "pnpm --filter @betterfit/api db:generate",
+    "db:migrate": "pnpm --filter @betterfit/api db:migrate",
+    "db:seed": "pnpm --filter @betterfit/api db:seed",
+    "dev:api": "pnpm --filter @betterfit/api dev",
+    "dev:app": "pnpm --filter @betterfit/app dev",
+    "lint:fix": "eslint . --fix",
+    "exercises:import": "pnpm --filter @betterfit/api exercises:import",
+    "exercises:export-translations": "pnpm --filter @betterfit/api exercises:export-translations",
+    "library:editor": "pnpm --filter @betterfit/api library:editor"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

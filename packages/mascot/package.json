@@ -1,0 +1,32 @@
+{
+  "name": "@betterfit/mascot",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@betterfit/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-svg": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "@types/react": "~19.3.0",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-svg": "15.16.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

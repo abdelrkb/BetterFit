@@ -1,0 +1,10 @@
+node_modules
+dist
+.turbo
+.expo
+pnpm-lock.yaml
+reference
+apps/api/drizzle
+docs
+CLAUDE.md
+README.md

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "BetterFit",
+    "slug": "betterfit",
+    "scheme": "betterfit",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-splash-screen",
+      "expo-secure-store",
+      "expo-audio"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.betterfit.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.betterfit.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1E0D45",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": null
+    }
+  }
+}

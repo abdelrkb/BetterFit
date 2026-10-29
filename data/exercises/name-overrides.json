@@ -1,0 +1,13 @@
+{
+  "_commentaire": "Corrections manuelles des noms d'exercices. La clé est l'identifiant d'origine (ou le nom anglais), la valeur le nom français voulu. Ce fichier l'emporte sur la traduction automatique.",
+  "Barbell_Squat": "Squat à la barre",
+  "Barbell_Bench_Press_-_Medium_Grip": "Développé couché à la barre",
+  "Barbell_Deadlift": "Soulevé de terre à la barre",
+  "Pullups": "Tractions",
+  "Chin-Up": "Traction supination",
+  "Pushups": "Pompes",
+  "Dips_-_Triceps_Version": "Dips triceps",
+  "Plank": "Gainage",
+  "Standing_Military_Press": "Développé militaire debout",
+  "Romanian_Deadlift": "Soulevé de terre roumain"
+}

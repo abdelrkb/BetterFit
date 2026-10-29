@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+*.tsbuildroot
+.turbo/
+
+# expo
+.expo/
+web-build/
+apps/app/ios/
+apps/app/android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# uploads (fichiers stockés par l'API en local)
+apps/api/uploads/
+
+# logs / divers
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+coverage/
+
+# ancien dépôt Git, rendu illisible par iCloud le 29/10/2026 — gardé au cas où
+.git-ancien-illisible/
