@@ -23,9 +23,16 @@ export type CalorieRingProps = {
   targetKcal: number;
   /** Ce qui a déjà été mangé, en kcal. */
   consumedKcal: number;
+  /**
+   * Ce que l'anneau raconte. `eaten` : ce qui a été mangé aujourd'hui.
+   * `planned` : ce que le programme prévoit. Les deux se ressemblent, mais
+   * « il te reste 1 753 kcal » et « ton plan en prévoit 1 753 » ne disent
+   * pas la même chose — mettre le mauvais mot rendrait l'écran faux.
+   */
+  mode?: 'eaten' | 'planned';
 };
 
-export function CalorieRing({ targetKcal, consumedKcal }: CalorieRingProps) {
+export function CalorieRing({ targetKcal, consumedKcal, mode = 'eaten' }: CalorieRingProps) {
   const { t } = useTranslation();
 
   const remaining = Math.round(targetKcal - consumedKcal);
@@ -35,7 +42,7 @@ export function CalorieRing({ targetKcal, consumedKcal }: CalorieRingProps) {
   const ratio = targetKcal > 0 ? Math.min(1, consumedKcal / targetKcal) : 0;
   const color = over ? colors.warning : colors.accent;
 
-  const label = t('home.ringLabel', {
+  const label = t(mode === 'planned' ? 'home.ringLabelPlanned' : 'home.ringLabel', {
     consumed: Math.round(consumedKcal),
     target: Math.round(targetKcal),
   });
@@ -69,12 +76,16 @@ export function CalorieRing({ targetKcal, consumedKcal }: CalorieRingProps) {
 
         <View style={styles.center} pointerEvents="none">
           <Metric style={styles.number}>{Math.abs(remaining)}</Metric>
-          <Caption>{over ? t('home.ringOver') : t('home.ringRemaining')}</Caption>
+          <Caption>
+            {mode === 'planned'
+              ? t(over ? 'home.ringPlannedOver' : 'home.ringPlannedLeft')
+              : t(over ? 'home.ringOver' : 'home.ringRemaining')}
+          </Caption>
         </View>
       </View>
 
       <Body style={styles.detail}>
-        {t('home.ringDetail', {
+        {t(mode === 'planned' ? 'home.ringDetailPlanned' : 'home.ringDetail', {
           consumed: Math.round(consumedKcal),
           target: Math.round(targetKcal),
         })}

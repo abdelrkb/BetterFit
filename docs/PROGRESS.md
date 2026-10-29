@@ -55,6 +55,40 @@ sortir le projet du Bureau (vers `~/Projets/BetterFit`) et libérer de l'espace 
   variante claire pour les fonds sombres. Écran de démonstration à l'ouverture de l'app.
 - **Étape 0 — Fondations** (validée) : monorepo pnpm + Turborepo, app Expo SDK 58 (web + iOS + Android) avec Expo Router, API Fastify + Drizzle, PostgreSQL en local via Docker, et les commandes `pnpm dev`, `db:*`, `test`, `lint`, `typecheck`, `format`. Un écran d'accueil affiche l'état du serveur et de la base.
 
+## Décisions de l'étape 7 — Programmes de nutrition
+- **Les chiffres de départ sont recopiés dans le programme**, pas lus dans le profil (sexe,
+  âge, poids, taille, niveau d'activité). Sinon une pesée du lendemain changerait
+  rétroactivement les cibles d'un plan déjà imprimé et remis au client.
+- **Les cibles retrouvent exactement les chiffres du prototype**, vérifié par un test sur le
+  client exemple : 1 389 de métabolisme, 2 153 de maintien, 1 753 de cible, 130 g de
+  protéines, 177 g de glucides, 59 g de lipides. Les glucides se calculent sur les valeurs
+  **non arrondies** : arrondir d'abord ferait dériver le total de plusieurs kcal.
+- **Les calories saisies à la main sur un repas l'emportent sur la somme de ses lignes**,
+  comme dans le prototype. Les macros, elles, viennent toujours des lignes : on n'invente
+  pas une répartition à partir d'un total.
+- **Un client peut cocher sa liste de courses et saisir un prix** sur un plan que son coach
+  lui a assigné, mais **ne peut pas modifier le plan**. C'est lui qui fait les courses.
+- **L'article coché est vérifié contre *son* programme** : sans ça, on pourrait cocher
+  l'article d'une liste qu'on n'a pas le droit de voir en passant l'identifiant de son
+  propre programme. Un test couvre exactement ce détournement.
+- **Les photos de recettes passent par des URL signées** (HMAC + expiration 24 h), pas en
+  libre accès comme les photos d'exercices, qui sont du domaine public. Une balise `<img>`
+  ne peut pas porter d'en-tête d'authentification : c'est la signature qui tient lieu de
+  droit d'accès. La route est déclarée dans un **périmètre Fastify séparé**, car un
+  `addHook` s'applique à toutes les routes de son périmètre, y compris celles déclarées
+  plus haut dans le fichier.
+- **La photo arrive en base64 dans le corps JSON**, pas en `multipart` : ça évite une
+  dépendance de plus pour un seul usage, et une photo de plat tient sous les 2 Mo.
+- **Musculation et nutrition ne se mélangent plus.** La liste des programmes ne filtrait pas
+  par type : les plans alimentaires seraient apparus dans l'onglet Entraînement, et un plan
+  ouvert comme un programme de musculation aurait planté. Corrigé des deux côtés.
+- **L'anneau de calories a deux discours** : « il te reste tant » sur l'accueil, « le plan en
+  prévoit tant » sur le programme. Le premier libellé, réutilisé tel quel, rendait l'écran
+  faux.
+- **Les prix sont mémorisés par libellé normalisé** (sans accents, en minuscules) et par
+  enseigne : « Blanc de Poulet » et « blanc de poulet » sont le même article. Un prix saisi
+  à la main l'emporte toujours sur un prix public Open Prices.
+
 ## Décisions de la navigation à quatre onglets
 - **Quatre onglets, les mêmes sur téléphone et sur le web** : Accueil, Programme, Nutrition,
   Profil. Les écrans sans onglet (bibliothèque d'exercices, séance en cours, espace coach,

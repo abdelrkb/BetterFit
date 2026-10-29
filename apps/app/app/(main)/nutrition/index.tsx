@@ -1,94 +1,150 @@
+import { Mascot } from '@betterfit/mascot';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { CalorieRing } from '@/components/CalorieRing';
 import { MacroBars } from '@/components/MacroBars';
-import { decimal } from '@/lib/format';
+import { DayPlan } from '@/components/nutrition/DayPlan';
+import { DeficitPage } from '@/components/nutrition/DeficitPage';
+import { ShoppingList } from '@/components/nutrition/ShoppingList';
+import { errorMessage } from '@/lib/errors';
+import { fetchNutritionProgram, listNutritionPrograms } from '@/lib/nutrition';
 import { useDailyTargets } from '@/lib/use-daily-targets';
-import { Banner, Body, Caption, Card, Metric, Screen, Title, spacing, useWideScreen } from '@/ui';
+import { useSession } from '@/stores/session';
+import { Banner, Body, Button, Card, Caption, Screen, Tabs, Title, colors, spacing } from '@/ui';
+
+type View = 'day' | 'shopping' | 'deficit';
 
 /**
- * L'onglet Nutrition : les objectifs du jour et leur explication.
+ * L'onglet Nutrition.
  *
- * Le menu, les plats et la liste de courses s'ajoutent à l'étape 7 ; les
- * chiffres affichés ici viennent déjà de `computeNutritionTargets`, qui fait
- * foi et est testé contre le prototype.
+ * Trois vues : la journée type, la liste de courses et la page du déficit.
+ * Sans programme, on affiche quand même les objectifs déduits du profil :
+ * quelqu'un qui vient d'arriver doit voir ses chiffres avant d'avoir construit
+ * quoi que ce soit.
  */
 export default function NutritionScreen() {
   const { t } = useTranslation();
-  const wide = useWideScreen();
-  const targets = useDailyTargets();
+  const router = useRouter();
+  const [view, setView] = useState<View>('day');
+  const userId = useSession((state) => state.user?.id);
+  const profileTargets = useDailyTargets();
 
-  if (targets === null) {
+  const list = useQuery({
+    queryKey: ['nutrition-programs'],
+    queryFn: () => listNutritionPrograms({ templates: false }),
+  });
+
+  // Le plus récemment modifié : c'est le plan en cours, qu'il vienne du coach
+  // ou de la personne elle-même.
+  const activeId = list.data?.items[0]?.id;
+
+  const program = useQuery({
+    queryKey: ['nutrition-program', activeId],
+    queryFn: () => fetchNutritionProgram(activeId!),
+    enabled: Boolean(activeId),
+  });
+
+  if (list.isPending) {
     return (
       <Screen>
         <Title>{t('nutrition.title')}</Title>
-        <Card title={t('nutrition.noProfileTitle')}>
-          <Body>{t('nutrition.noProfileBody')}</Body>
+        <ActivityIndicator color={colors.accent} />
+      </Screen>
+    );
+  }
+
+  if (list.isError) {
+    return (
+      <Screen>
+        <Title>{t('nutrition.title')}</Title>
+        <Banner message={errorMessage(list.error)} />
+      </Screen>
+    );
+  }
+
+  if (!activeId || !program.data) {
+    return (
+      <Screen>
+        <Title>{t('nutrition.title')}</Title>
+
+        {profileTargets === null ? (
+          <Card title={t('nutrition.noProfileTitle')}>
+            <Body>{t('nutrition.noProfileBody')}</Body>
+          </Card>
+        ) : (
+          <>
+            <Card overline={t('nutrition.todayOverline')} title={t('nutrition.todayTitle')}>
+              <CalorieRing targetKcal={profileTargets.targetKcal} consumedKcal={0} />
+              <Caption>{t('nutrition.fromProfile')}</Caption>
+            </Card>
+
+            <Card title={t('nutrition.macrosTitle')}>
+              <MacroBars targets={profileTargets} />
+            </Card>
+          </>
+        )}
+
+        <Card tone="soft" style={styles.empty}>
+          <Mascot pose="stand" size={96} />
+          <Body style={styles.center}>{t('nutrition.noPlanBody')}</Body>
+          <Button
+            block
+            label={t('nutrition.createPlan')}
+            onPress={() => router.push('/nutrition/edit')}
+          />
         </Card>
       </Screen>
     );
   }
 
+  const plan = program.data;
+  const mine = plan.ownerId === userId;
+
   return (
     <Screen>
-      <Title>{t('nutrition.title')}</Title>
+      <Title>{plan.title}</Title>
+      {mine ? null : <Caption>{t('nutrition.fromCoach')}</Caption>}
 
-      {targets.deficitTooLarge ? <Banner message={t('nutrition.deficitTooLarge')} /> : null}
+      {plan.settings.goalTitle.length > 0 ? <Body>{plan.settings.goalTitle}</Body> : null}
 
-      <View style={[styles.stack, wide && styles.columns]}>
-        <View style={[styles.stack, wide && styles.column]}>
-          <Card overline={t('nutrition.todayOverline')} title={t('nutrition.todayTitle')}>
-            <CalorieRing targetKcal={targets.targetKcal} consumedKcal={0} />
-            <Caption>{t('nutrition.journalComing')}</Caption>
-          </Card>
+      <Tabs
+        value={view}
+        onChange={setView}
+        items={[
+          { value: 'day', label: t('nutrition.tabDay') },
+          { value: 'shopping', label: t('nutrition.tabShopping') },
+          { value: 'deficit', label: t('nutrition.tabDeficit') },
+        ]}
+      />
 
-          <Card title={t('nutrition.macrosTitle')}>
-            <MacroBars targets={targets} />
-          </Card>
-        </View>
+      {view === 'day' ? <DayPlan program={plan} /> : null}
+      {view === 'shopping' ? <ShoppingList program={plan} /> : null}
+      {view === 'deficit' ? <DeficitPage targets={plan.targets} /> : null}
 
-        <View style={[styles.stack, wide && styles.column]}>
-          <Card overline={t('nutrition.deficitOverline')} title={t('nutrition.deficitTitle')}>
-            <View style={styles.metrics}>
-              <View style={styles.metric}>
-                <Metric>{targets.bmrKcal}</Metric>
-                <Caption>{t('nutrition.bmr')}</Caption>
-              </View>
-              <View style={styles.metric}>
-                <Metric>{targets.maintenanceKcal}</Metric>
-                <Caption>{t('nutrition.maintenance')}</Caption>
-              </View>
-              <View style={styles.metric}>
-                <Metric>{targets.targetKcal}</Metric>
-                <Caption>{t('nutrition.target')}</Caption>
-              </View>
-            </View>
+      {/* Un plan reçu d'un coach se consulte, il ne se modifie pas. */}
+      {mine ? (
+        <Button
+          block
+          variant="secondary"
+          label={t('nutrition.editPlan')}
+          onPress={() => router.push(`/nutrition/edit?id=${plan.id}`)}
+        />
+      ) : null}
 
-            <Body>
-              {targets.deficitKcal === 0
-                ? t('nutrition.explainMaintain')
-                : t(targets.deficitKcal > 0 ? 'nutrition.explainLose' : 'nutrition.explainGain', {
-                    kcal: Math.abs(targets.deficitKcal),
-                    kg: decimal(Math.abs(targets.kgPerWeek), 2),
-                  })}
-            </Body>
-
-            <Caption>{t('nutrition.water', { liters: decimal(targets.waterLiters) })}</Caption>
-          </Card>
-
-          <Card title={t('nutrition.comingTitle')}>
-            <Body>{t('nutrition.comingBody')}</Body>
-          </Card>
-        </View>
-      </View>
+      <Button
+        block
+        variant="ghost"
+        label={t('nutrition.openRecipes')}
+        onPress={() => router.push('/nutrition/recipes')}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: spacing.lg },
-  columns: { flexDirection: 'row', alignItems: 'flex-start' },
-  column: { flex: 1 },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg },
-  metric: { gap: spacing.xs, minWidth: 90 },
+  empty: { alignItems: 'center', gap: spacing.md },
+  center: { textAlign: 'center' },
 });
