@@ -14,7 +14,8 @@
     "db:seed": "tsx src/scripts/seed.ts",
     "exercises:import": "tsx src/scripts/import-exercises.ts",
     "exercises:export-translations": "tsx src/scripts/export-exercise-translations.ts",
-    "library:editor": "tsx src/scripts/grant-library-editor.ts"
+    "library:editor": "tsx src/scripts/grant-library-editor.ts",
+    "foods:import": "tsx src/scripts/import-foods.ts"
   },
   "dependencies": {
     "@betterfit/shared": "workspace:*",

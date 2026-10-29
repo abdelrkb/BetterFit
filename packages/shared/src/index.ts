@@ -2,6 +2,7 @@ export * from './auth.js';
 export * from './coaching.js';
 export * from './constants.js';
 export * from './exercises.js';
+export * from './foods.js';
 export * from './health.js';
 export * from './nutrition-program.js';
 export * from './nutrition.js';

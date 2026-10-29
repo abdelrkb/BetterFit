@@ -85,6 +85,7 @@ pnpm db:down          # arrête Postgres
 pnpm db:generate      # génère une migration après un changement de apps/api/src/db/schema.ts
 pnpm db:migrate       # applique les migrations Drizzle
 pnpm db:seed          # importe exercices + aliments Ciqual + données de démo
+pnpm foods:import     # importe la table Ciqual (--file <archive.zip> si l'ANSES est en maintenance)
 pnpm test             # tests
 pnpm lint && pnpm typecheck
 pnpm format           # Prettier

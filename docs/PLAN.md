@@ -15,6 +15,7 @@ Chaque étape se termine par quelque chose que le porteur du projet peut **teste
 | 8 | **Base aliments** : import Ciqual, recherche sans accents, aliments perso, repas du coach calculés automatiquement | Construire un déjeuner avec « riz basmati 160 g » et voir les macros se calculer |
 | 9 | **Journal et poids** : journal du jour, scan code-barres (Open Food Facts), récents et favoris, saisie rapide, anneau de calories, poids avec moyenne sur 7 jours | Scanner un produit du placard, le loguer, saisir son poids plusieurs jours |
 | 10 | **PDF** : gabarits nutrition et musculation repris du prototype, générés par le serveur, partage depuis le téléphone | Exporter le programme d'un client et l'ouvrir sur le téléphone |
-| 11 | **Mise en ligne** : Docker Compose sur le VPS, HTTPS, build web, sauvegardes, puis builds EAS (TestFlight, test interne Android) | Utiliser l'app sur sa vraie adresse web, installer la version de test sur son téléphone |
+| 11 | **Mode libre** : démarrer une **séance libre** sans programme (minuteur immédiat, exercices ajoutés au fil), et **journal alimentaire utilisable sans programme** | Faire une séance improvisée en salle sans rien avoir préparé ; noter ce qu'on a mangé un jour sans avoir de plan |
+| 12 | **Mise en ligne** : Docker Compose sur le VPS, HTTPS, build web, sauvegardes, puis builds EAS (TestFlight, test interne Android) | Utiliser l'app sur sa vraie adresse web, installer la version de test sur son téléphone |
 
 Après la V1 : voir la section 6 du cahier des charges.

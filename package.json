@@ -24,7 +24,8 @@
     "lint:fix": "eslint . --fix",
     "exercises:import": "pnpm --filter @betterfit/api exercises:import",
     "exercises:export-translations": "pnpm --filter @betterfit/api exercises:export-translations",
-    "library:editor": "pnpm --filter @betterfit/api library:editor"
+    "library:editor": "pnpm --filter @betterfit/api library:editor",
+    "foods:import": "pnpm --filter @betterfit/api foods:import"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

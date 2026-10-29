@@ -15,6 +15,20 @@
       "when": 1793275954559,
       "tag": "0001_funny_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793286935944,
+      "tag": "0002_glossy_james_howlett",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793287275648,
+      "tag": "0003_violet_korath",
+      "breakpoints": true
     }
   ]
 }

@@ -329,3 +329,133 @@ describe('séparation des deux familles de programmes', () => {
     expect(response.statusCode).toBe(404);
   });
 });
+
+describe('macros calculées depuis la base d’aliments', () => {
+  /** Le riz de la table Ciqual : 130 kcal pour 100 g. */
+  async function insertRice() {
+    const { db } = await import('../src/db/client.js');
+    const { foods } = await import('../src/db/schema.js');
+    const { buildFoodSearchText } = await import('@betterfit/shared');
+
+    const [row] = await db
+      .insert(foods)
+      .values({
+        source: 'ciqual',
+        ownerId: null,
+        externalId: '9644',
+        name: 'Riz blanc, cuit, non salé',
+        category: 'pâtes, riz et céréales',
+        kcal: 130,
+        proteinG: 2.7,
+        carbsG: 28,
+        fatG: 0.3,
+        searchText: buildFoodSearchText({ name: 'Riz blanc, cuit, non salé' }),
+      })
+      .returning({ id: foods.id });
+
+    return row!.id;
+  }
+
+  function withFood(foodId: string, quantity: string, quantityG: number | null = null) {
+    return program({
+      meals: [
+        {
+          name: 'Déjeuner',
+          time: '12h30',
+          kcalOverride: null,
+          items: [
+            {
+              foodId,
+              label: '',
+              quantity,
+              quantityG,
+              alternative: '',
+              kcal: null,
+              proteinG: null,
+              carbsG: null,
+              fatG: null,
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  it('calcule les macros à partir de la quantité en grammes', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    const saved = (await create(session, withFood(foodId, '160 g', 160))).json();
+    const item = saved.meals[0].items[0];
+
+    expect(item.kcal).toBe(208);
+    expect(item.proteinG).toBeCloseTo(4.3, 1);
+    expect(item.carbsG).toBeCloseTo(44.8, 1);
+  });
+
+  it('déduit les grammes de la quantité écrite à la main', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    // Pas de `quantityG` : « 160 g » doit suffire.
+    const saved = (await create(session, withFood(foodId, '160 g'))).json();
+
+    expect(saved.meals[0].items[0].kcal).toBe(208);
+    expect(saved.meals[0].items[0].quantityG).toBe(160);
+  });
+
+  it('reprend le nom de l’aliment quand la ligne n’en a pas', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    const saved = (await create(session, withFood(foodId, '160 g'))).json();
+
+    expect(saved.meals[0].items[0].label).toBe('Riz blanc, cuit, non salé');
+  });
+
+  it('ne calcule rien pour une quantité qui ne se chiffre pas', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    const saved = (await create(session, withFood(foodId, 'à volonté'))).json();
+
+    // Mieux vaut ne rien compter que compter faux.
+    expect(saved.meals[0].items[0].kcal).toBeNull();
+  });
+
+  it('ignore les valeurs envoyées par l’app quand l’aliment fait foi', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    const input = withFood(foodId, '160 g', 160);
+    input.meals[0]!.items[0]!.kcal = 5;
+
+    const saved = (await create(session, input)).json();
+
+    // Le serveur recalcule : un client modifié ne doit pas pouvoir annoncer
+    // 5 kcal pour 160 g de riz.
+    expect(saved.meals[0].items[0].kcal).toBe(208);
+  });
+
+  it('oublie un aliment qui n’existe pas, sans perdre la ligne', async () => {
+    const session = await register(app);
+    const { randomUUID } = await import('node:crypto');
+
+    const input = withFood(randomUUID(), '160 g');
+    input.meals[0]!.items[0]!.label = 'Riz de je ne sais où';
+
+    const saved = (await create(session, input)).json();
+
+    expect(saved.meals[0].items[0].foodId).toBeNull();
+    expect(saved.meals[0].items[0].label).toBe('Riz de je ne sais où');
+  });
+
+  it('totalise la journée avec les valeurs calculées', async () => {
+    const session = await register(app);
+    const foodId = await insertRice();
+
+    const saved = (await create(session, withFood(foodId, '160 g'))).json();
+
+    expect(saved.dayTotals.kcal).toBe(208);
+  });
+});

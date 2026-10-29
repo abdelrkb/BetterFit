@@ -660,8 +660,13 @@ export const mealItems = pgTable(
       .notNull()
       .references(() => meals.id, { onDelete: 'cascade' }),
     position: smallint('position').notNull(),
-    /** Rempli à l'étape 8, quand la base d'aliments existera. */
-    foodId: uuid('food_id'),
+    /**
+     * L'aliment de la base, quand la ligne en cite un : les macros sont alors
+     * calculées depuis lui. `null` pour une ligne en texte libre.
+     * `set null` à la suppression : si quelqu'un efface son aliment perso, la
+     * ligne du programme reste, avec son libellé et ses valeurs figées.
+     */
+    foodId: uuid('food_id').references(() => foods.id, { onDelete: 'set null' }),
     label: text('label').notNull().default(''),
     /** Quantité en texte libre : « 160 g », « 2 œufs », « à volonté ». */
     quantity: text('quantity').notNull().default(''),
@@ -778,7 +783,7 @@ export const recipeIngredients = pgTable(
       .notNull()
       .references(() => recipes.id, { onDelete: 'cascade' }),
     position: smallint('position').notNull(),
-    foodId: uuid('food_id'),
+    foodId: uuid('food_id').references(() => foods.id, { onDelete: 'set null' }),
     label: text('label').notNull().default(''),
     quantity: text('quantity').notNull().default(''),
     quantityG: real('quantity_g'),
@@ -862,3 +867,72 @@ export type MealItemRow = typeof mealItems.$inferSelect;
 export type ShoppingCategoryRow = typeof shoppingCategories.$inferSelect;
 export type ShoppingItemRow = typeof shoppingItems.$inferSelect;
 export type RecipeRow = typeof recipes.$inferSelect;
+
+/* ------------------------------------------------------------------ */
+/* Base d'aliments (étape 8)                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * D'où vient un aliment.
+ *
+ * `ciqual` : la table de l'ANSES, des aliments génériques (« Riz blanc cuit »).
+ * `off` : un produit de marque lu par code-barres sur Open Food Facts, mis en
+ * cache chez nous pour ne pas réinterroger leur serveur à chaque fois.
+ * `custom` : un aliment créé par quelqu'un, visible de lui seul.
+ */
+export const foodSource = pgEnum('food_source', ['ciqual', 'off', 'custom']);
+
+/**
+ * Un aliment, avec ses valeurs **pour 100 g**.
+ *
+ * Toujours pour 100 g, quelle que soit la source : c'est la seule façon de
+ * mélanger Ciqual, Open Food Facts et les aliments perso dans un même calcul.
+ * La portion usuelle est à côté, en information.
+ */
+export const foods = pgTable(
+  'foods',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    source: foodSource('source').notNull(),
+    /** `null` pour les aliments partagés, sinon le créateur. */
+    ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+    /** Code Ciqual, ou code-barres : rend l'import rejouable. */
+    externalId: text('external_id'),
+    /** Code-barres, quand on en a un. Sert à retrouver un produit scanné. */
+    barcode: text('barcode'),
+
+    name: text('name').notNull(),
+    brand: text('brand').notNull().default(''),
+    category: text('category').notNull().default(''),
+
+    /** Valeurs pour 100 g. `null` quand la source ne les donne pas. */
+    kcal: real('kcal'),
+    proteinG: real('protein_g'),
+    carbsG: real('carbs_g'),
+    sugarsG: real('sugars_g'),
+    fatG: real('fat_g'),
+    saturatedFatG: real('saturated_fat_g'),
+    fiberG: real('fiber_g'),
+    saltG: real('salt_g'),
+
+    /** Portion usuelle : « une tranche », « un bol ». */
+    servingLabel: text('serving_label').notNull().default(''),
+    servingG: real('serving_g'),
+
+    /** Nom et marque sans accents, en minuscules : la colonne indexée. */
+    searchText: text('search_text').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('foods_source_external_unique').on(table.source, table.externalId),
+    index('foods_owner_idx').on(table.ownerId),
+    index('foods_barcode_idx').on(table.barcode),
+  ],
+);
+
+export const foodsRelations = relations(foods, ({ one }) => ({
+  owner: one(users, { fields: [foods.ownerId], references: [users.id] }),
+}));
+
+export type FoodRow = typeof foods.$inferSelect;

@@ -140,6 +140,13 @@ export default function NutritionScreen() {
         label={t('nutrition.openRecipes')}
         onPress={() => router.push('/nutrition/recipes')}
       />
+
+      <Button
+        block
+        variant="ghost"
+        label={t('nutrition.openFoods')}
+        onPress={() => router.push('/nutrition/foods')}
+      />
     </Screen>
   );
 }

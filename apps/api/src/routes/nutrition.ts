@@ -1,6 +1,8 @@
 import {
   booleanQueryParam,
   dayTotals,
+  gramsFromText,
+  macrosForFood,
   nutritionProgramInputSchema,
   nutritionProgramSchema,
   nutritionProgramSummarySchema,
@@ -14,6 +16,7 @@ import { z } from 'zod';
 import { currentUser } from '../auth/plugin.js';
 import { db } from '../db/client.js';
 import {
+  foods,
   mealItems,
   meals,
   nutritionDetails,
@@ -167,11 +170,69 @@ export async function loadNutritionProgram(programId: string): Promise<Nutrition
  * Écrit réglages, repas, lignes et liste de courses. Tout est remplacé, ce
  * qui rend l'opération idempotente et évite de deviner ce qui a changé.
  */
+/**
+ * Complète les lignes qui citent un aliment de la base.
+ *
+ * Dès qu'une ligne a un `foodId` et une quantité chiffrable, ses calories et
+ * ses macros sont **recalculées depuis la base** : c'est la promesse de
+ * l'étape 8, « riz basmati 160 g » doit se calculer tout seul. Les valeurs
+ * envoyées par l'app sont ignorées dans ce cas — le serveur fait foi, sinon
+ * un client modifié pourrait annoncer n'importe quoi.
+ *
+ * Une ligne sans aliment, ou dont la quantité n'est pas chiffrable
+ * (« à volonté »), garde ce qu'on lui a saisi.
+ */
+async function withComputedMacros(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  input: NutritionProgramInput,
+): Promise<NutritionProgramInput> {
+  const ids = [
+    ...new Set(
+      input.meals.flatMap((meal) =>
+        meal.items.map((item) => item.foodId).filter((id): id is string => id !== null),
+      ),
+    ),
+  ];
+
+  if (ids.length === 0) return input;
+
+  const rows = await tx.select().from(foods).where(inArray(foods.id, ids));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  return {
+    ...input,
+    meals: input.meals.map((meal) => ({
+      ...meal,
+      items: meal.items.map((item) => {
+        const food = item.foodId ? byId.get(item.foodId) : undefined;
+        if (!food) return { ...item, foodId: null };
+
+        // La quantité en grammes, saisie telle quelle ou déduite du texte.
+        const grams = item.quantityG ?? gramsFromText(item.quantity);
+        if (grams === null) return item;
+
+        const macros = macrosForFood(food, grams);
+
+        return {
+          ...item,
+          label: item.label.trim().length > 0 ? item.label : food.name,
+          quantityG: grams,
+          kcal: Math.round(macros.kcal),
+          proteinG: macros.proteinG,
+          carbsG: macros.carbsG,
+          fatG: macros.fatG,
+        };
+      }),
+    })),
+  };
+}
+
 async function writeContents(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   programId: string,
-  input: NutritionProgramInput,
+  rawInput: NutritionProgramInput,
 ): Promise<void> {
+  const input = await withComputedMacros(tx, rawInput);
   const details = {
     sex: input.settings.sex,
     age: input.settings.age,

@@ -17,8 +17,10 @@ import {
 } from 'react-native';
 import { errorMessage } from '@/lib/errors';
 import { decimal } from '@/lib/format';
+import { FoodPicker } from '@/components/FoodPicker';
 import {
   addCategory,
+  addFoodToMeal,
   addMeal,
   addMealItem,
   addShoppingItem,
@@ -87,6 +89,8 @@ export default function NutritionEditScreen() {
       requête, ou des valeurs par défaut. */
   const [edited, setEdited] = useState<NutritionDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Index du repas auquel on ajoute un aliment, ou `null`. */
+  const [pickingFor, setPickingFor] = useState<number | null>(null);
 
   const existing = useQuery({
     queryKey: ['nutrition-program', id],
@@ -140,6 +144,32 @@ export default function NutritionEditScreen() {
       <Screen>
         <ActivityIndicator color={colors.accent} />
       </Screen>
+    );
+  }
+
+  if (pickingFor !== null) {
+    return (
+      <FoodPicker
+        onCancel={() => setPickingFor(null)}
+        onCreate={() => {
+          setPickingFor(null);
+          router.push('/nutrition/foods/edit');
+        }}
+        onPick={(food, grams) => {
+          // Les macros seront recalculées par le serveur à
+          // l'enregistrement : on pose ici ce qu'il faut pour qu'il
+          // reconnaisse l'aliment et la quantité.
+          setDraft(
+            addFoodToMeal(draft, pickingFor, {
+              foodId: food.id,
+              label: food.name,
+              quantity: `${decimal(grams, 0)} g`,
+              quantityG: grams,
+            }),
+          );
+          setPickingFor(null);
+        }}
+      />
     );
   }
 
@@ -207,7 +237,7 @@ export default function NutritionEditScreen() {
       ) : null}
 
       {step === 'meals' ? (
-        <MealsStep draft={draft} onChange={setDraft} />
+        <MealsStep draft={draft} onChange={setDraft} onPickFood={setPickingFor} />
       ) : null}
 
       {step === 'shopping' ? (
@@ -356,9 +386,11 @@ function SettingsStep({
 function MealsStep({
   draft,
   onChange,
+  onPickFood,
 }: {
   draft: NutritionDraft;
   onChange: (draft: NutritionDraft) => void;
+  onPickFood: (mealIndex: number) => void;
 }) {
   const { t } = useTranslation();
 
@@ -437,6 +469,13 @@ function MealsStep({
             </View>
           ))}
 
+          {/* Le chemin recommandé : l'aliment vient de la base, donc ses
+              macros se calculent toutes seules. */}
+          <Button
+            block
+            label={t('nutrition.addFromDatabase')}
+            onPress={() => onPickFood(mealIndex)}
+          />
           <Button
             block
             variant="secondary"

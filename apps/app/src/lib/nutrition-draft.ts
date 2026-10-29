@@ -246,3 +246,21 @@ export function toInput(draft: NutritionDraft): NutritionProgramInput {
       })),
   };
 }
+
+/**
+ * Ajoute une ligne qui cite un aliment de la base.
+ *
+ * Les macros ne sont **pas** calculées ici : c'est le serveur qui les calcule
+ * à l'enregistrement, depuis l'aliment et la quantité. Les calculer aussi
+ * dans l'app ferait deux endroits pour la même règle, et deux occasions de
+ * diverger.
+ */
+export function addFoodToMeal(
+  draft: NutritionDraft,
+  mealIndex: number,
+  food: { foodId: string; label: string; quantity: string; quantityG: number },
+): NutritionDraft {
+  return updateMeal(draft, mealIndex, {
+    items: [...(draft.meals[mealIndex]?.items ?? []), { ...emptyMealItem(), ...food }],
+  });
+}
