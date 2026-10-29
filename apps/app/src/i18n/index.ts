@@ -1,8 +1,12 @@
+import { setZodMessagesToFrench } from '@betterfit/shared';
 import { getLocales } from 'expo-localization';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '../../locales/en.json';
 import fr from '../../locales/fr.json';
+
+// Les messages de validation des formulaires doivent être en français.
+setZodMessagesToFrench();
 
 const deviceLanguage = getLocales()[0]?.languageCode ?? 'fr';
 

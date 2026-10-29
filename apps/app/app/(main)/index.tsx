@@ -1,20 +1,26 @@
 import { Mascot } from '@betterfit/mascot';
-import { ageFromBirthDate } from '@betterfit/shared';
-import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { CalorieRing } from '@/components/CalorieRing';
 import { CoachingCard } from '@/components/CoachingCard';
+import { RecentWorkouts } from '@/components/RecentWorkouts';
 import { TodaySessionCard } from '@/components/TodaySessionCard';
+import { WeightWidget } from '@/components/WeightWidget';
+import { useDailyTargets } from '@/lib/use-daily-targets';
 import { useSession } from '@/stores/session';
-import { Body, Button, Caption, Card, HeroCard, Logo, Metric, Screen, Title, spacing } from '@/ui';
+import { Body, Card, HeroCard, Logo, Screen, Title, spacing, useWideScreen } from '@/ui';
 
+/**
+ * L'accueil : où j'en suis aujourd'hui.
+ *
+ * Trois réponses, dans l'ordre : ce qu'il me reste à manger, ce que je dois
+ * m'entraîner, et où en est mon poids. Le reste de l'app est dans les onglets.
+ */
 export default function HomeScreen() {
   const { t } = useTranslation();
   const user = useSession((state) => state.user);
-  const profile = useSession((state) => state.profile);
-  const latestWeightKg = useSession((state) => state.latestWeightKg);
-
-  const age = profile ? ageFromBirthDate(profile.birthDate) : null;
+  const wide = useWideScreen();
+  const targets = useDailyTargets();
 
   return (
     <Screen>
@@ -33,53 +39,24 @@ export default function HomeScreen() {
 
       <CoachingCard />
 
-      <TodaySessionCard />
+      <View style={[styles.stack, wide && styles.columns]}>
+        <View style={[styles.stack, wide && styles.column]}>
+          <Card overline={t('home.caloriesOverline')} title={t('home.caloriesTitle')}>
+            {targets === null ? (
+              <Body>{t('home.caloriesNoProfile')}</Body>
+            ) : (
+              <CalorieRing targetKcal={targets.targetKcal} consumedKcal={0} />
+            )}
+          </Card>
 
-      <Card title={t('home.profileCardTitle')}>
-        <View style={styles.metrics}>
-          <View style={styles.metric}>
-            <Metric>
-              {latestWeightKg === null ? '—' : latestWeightKg.toFixed(1).replace('.', ',')}
-            </Metric>
-            <Caption>{latestWeightKg === null ? t('home.noWeight') : t('home.weightUnit')}</Caption>
-          </View>
-          <View style={styles.metric}>
-            <Metric>{profile?.heightCm ?? '—'}</Metric>
-            <Caption>{t('home.heightUnit')}</Caption>
-          </View>
-          <View style={styles.metric}>
-            <Metric>{age ?? '—'}</Metric>
-            <Caption>{t('home.ageUnit')}</Caption>
-          </View>
+          <WeightWidget />
         </View>
-        {profile ? (
-          <Caption>{t('home.sessions', { count: profile.weeklySessions })}</Caption>
-        ) : null}
 
-        <Link href="/profile" asChild>
-          <Button block variant="secondary" label={t('home.openProfile')} onPress={() => {}} />
-        </Link>
-      </Card>
-
-      <Link href="/training" asChild>
-        <Button block label={t('home.openTraining')} onPress={() => {}} />
-      </Link>
-
-      <Link href="/exercises" asChild>
-        <Button block variant="secondary" label={t('home.openExercises')} onPress={() => {}} />
-      </Link>
-
-      <Link href="/workout/history" asChild>
-        <Button block variant="secondary" label={t('home.openHistory')} onPress={() => {}} />
-      </Link>
-
-      <Link href="/coach" asChild>
-        <Button block variant="secondary" label={t('home.openCoach')} onPress={() => {}} />
-      </Link>
-
-      <Link href="/demo" asChild>
-        <Button block variant="ghost" label={t('home.openDemo')} onPress={() => {}} />
-      </Link>
+        <View style={[styles.stack, wide && styles.column]}>
+          <TodaySessionCard />
+          <RecentWorkouts />
+        </View>
+      </View>
     </Screen>
   );
 }
@@ -88,6 +65,8 @@ const styles = StyleSheet.create({
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   heroText: { flex: 1, gap: spacing.sm, minWidth: 180 },
   heroTitle: { marginTop: spacing.sm },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg },
-  metric: { gap: spacing.xs, minWidth: 90 },
+  stack: { gap: spacing.lg },
+  // Sur grand écran, deux colonnes ; sur téléphone, tout s'empile.
+  columns: { flexDirection: 'row', alignItems: 'flex-start' },
+  column: { flex: 1 },
 });

@@ -223,13 +223,18 @@ export default function ProfileScreen() {
         onPress={() => void onSubmit()}
       />
 
+      {/* L'espace coach et l'écran de style n'ont pas d'onglet : on y entre d'ici. */}
+      <Link href="/coach" asChild>
+        <Button block variant="secondary" label={t('profile.openCoach')} onPress={() => {}} />
+      </Link>
+
       <PasswordCard />
       <DataCard />
 
       <Button block variant="ghost" label={t('profile.signOut')} onPress={() => void signOut()} />
 
-      <Link href="/" asChild>
-        <Button block variant="ghost" label={t('common.back')} onPress={() => {}} />
+      <Link href="/demo" asChild>
+        <Button block variant="ghost" label={t('profile.openDemo')} onPress={() => {}} />
       </Link>
     </Screen>
   );

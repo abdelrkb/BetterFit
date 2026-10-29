@@ -38,6 +38,14 @@ export const fonts = {
 
 export { fontFamilies };
 
+/**
+ * Hauteur de la barre d'onglets flottante.
+ *
+ * Elle est posée hors du flux, donc c'est `Screen` qui réserve la place en
+ * bas de chaque écran : sans ça, la dernière carte passerait dessous.
+ */
+export const TAB_BAR_HEIGHT = 68;
+
 /** Vrai sur un grand écran web : on peut passer en plusieurs colonnes. */
 export function useWideScreen(): boolean {
   const { width } = useWindowDimensions();

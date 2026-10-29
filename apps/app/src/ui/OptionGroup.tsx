@@ -31,7 +31,16 @@ export function OptionGroup<T extends string>({
   return (
     <View style={styles.container}>
       <Overline>{label}</Overline>
-      <View style={layout === 'row' ? styles.row : styles.column}>
+      {/*
+        Le groupe s'annonce comme un groupe de boutons radio, et chaque option
+        dit `checked` : un lecteur d'écran n'annonce pas l'état d'un radio
+        marqué `selected`, qui est réservé aux onglets et aux listes.
+      */}
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+        style={layout === 'row' ? styles.row : styles.column}
+      >
         {options.map((option) => {
           const selected = option.value === value;
 
@@ -41,7 +50,7 @@ export function OptionGroup<T extends string>({
               accessibilityRole="radio"
               accessibilityLabel={option.label}
               accessibilityHint={option.hint}
-              accessibilityState={{ selected }}
+              accessibilityState={{ checked: selected, selected }}
               onPress={() => onChange(option.value)}
               style={({ pressed }) => [
                 styles.option,

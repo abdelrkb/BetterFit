@@ -1,7 +1,7 @@
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
-import { API_PREFIX } from '@betterfit/shared';
+import { API_PREFIX, setZodMessagesToFrench } from '@betterfit/shared';
 import Fastify from 'fastify';
 import {
   hasZodFastifySchemaValidationErrors,
@@ -20,8 +20,13 @@ import { programRoutes } from './routes/programs.js';
 import { workoutRoutes } from './routes/workouts.js';
 import { healthRoutes } from './routes/health.js';
 import { meRoutes } from './routes/me.js';
+import { weightRoutes } from './routes/weight.js';
 
 export async function buildApp() {
+  // Les erreurs de validation renvoyées par champ sont affichées telles
+  // quelles par l'app : elles doivent être en français.
+  setZodMessagesToFrench();
+
   const app = Fastify({
     logger:
       env.NODE_ENV === 'test'
@@ -102,6 +107,7 @@ export async function buildApp() {
   await app.register(programRoutes, { prefix: API_PREFIX });
   await app.register(workoutRoutes, { prefix: API_PREFIX });
   await app.register(coachingRoutes, { prefix: API_PREFIX });
+  await app.register(weightRoutes, { prefix: API_PREFIX });
 
   return app;
 }

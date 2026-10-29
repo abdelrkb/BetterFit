@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ACTIVITY_COEFFICIENTS, type ActivityLevel, type Sex } from './profile.js';
+import { ACTIVITY_COEFFICIENTS, type ActivityLevel, type Goal, type Sex } from './profile.js';
 
 /**
  * Les calculs de nutrition, portés de `reference/prototype-studio.html`
@@ -23,6 +23,24 @@ export const WATER_ML_PER_KG = 35;
  * fonte musculaire, fatigue, et reprise quasi certaine. L'app alerte.
  */
 export const MAX_SAFE_DEFICIT_RATIO = 0.25;
+
+/**
+ * Écart au maintien proposé par défaut, selon l'objectif déclaré, en kcal.
+ *
+ * Volontairement prudent : 400 kcal de déficit, c'est environ 350 g par
+ * semaine, un rythme qui se tient dans la durée et qui reste très en deçà du
+ * seuil de `MAX_SAFE_DEFICIT_RATIO`. La prise de masse se fait en surplus
+ * léger — au-delà, on prend surtout du gras.
+ */
+export const DEFAULT_DEFICIT_KCAL: Record<Goal, number> = {
+  lose_fat: 400,
+  maintain: 0,
+  gain_muscle: -250,
+};
+
+/** Protéines et lipides proposés par défaut, en grammes par kilo. */
+export const DEFAULT_PROTEIN_G_PER_KG = 1.8;
+export const DEFAULT_FAT_G_PER_KG = 0.9;
 
 export const nutritionInputSchema = z.object({
   sex: z.enum(['female', 'male']),

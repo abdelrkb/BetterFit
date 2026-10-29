@@ -55,6 +55,44 @@ sortir le projet du Bureau (vers `~/Projets/BetterFit`) et libérer de l'espace 
   variante claire pour les fonds sombres. Écran de démonstration à l'ouverture de l'app.
 - **Étape 0 — Fondations** (validée) : monorepo pnpm + Turborepo, app Expo SDK 58 (web + iOS + Android) avec Expo Router, API Fastify + Drizzle, PostgreSQL en local via Docker, et les commandes `pnpm dev`, `db:*`, `test`, `lint`, `typecheck`, `format`. Un écran d'accueil affiche l'état du serveur et de la base.
 
+## Décisions de la navigation à quatre onglets
+- **Quatre onglets, les mêmes sur téléphone et sur le web** : Accueil, Programme, Nutrition,
+  Profil. Les écrans sans onglet (bibliothèque d'exercices, séance en cours, espace coach,
+  démo) restent atteignables par navigation : `href: null` les retire de la barre sans les
+  retirer de l'app. Chaque dossier concerné reçoit sa propre pile, sinon chacun de ses
+  fichiers deviendrait un onglet.
+- **Les pictogrammes de la barre sont dessinés à la main** en `react-native-svg`. Quatre
+  traits ne justifient pas une bibliothèque d'icônes de plus, et le trait reste celui de la
+  mascotte.
+- **L'anneau de calories sature à 100 %.** Au-delà de l'objectif, c'est la couleur d'alerte
+  et le libellé (« au-dessus » au lieu de « restantes ») qui le disent, pas un deuxième tour
+  d'anneau illisible.
+- **Le widget de poids annonce une variation de tendance, jamais un écart entre deux
+  pesées**, et se tait tant qu'il n'y a pas une semaine de recul : d'un jour à l'autre, le
+  poids bouge d'un kilo rien que pour l'eau.
+- **Une seule pesée par jour** : repeser le soir corrige la mesure du matin au lieu d'en
+  ajouter une deuxième.
+- **`weightTrend` compte désormais sa fenêtre en jours de calendrier, plus en nombre de
+  pesées.** Son nom et sa documentation disaient « sept jours » mais le code moyennait les
+  sept dernières mesures : quelqu'un qui se pèse deux fois par semaine obtenait une moyenne
+  sur presque un mois, qui ne réagissait plus à rien.
+- **Les messages de validation de zod sont passés en français** (`setZodMessagesToFrench`,
+  appelé une fois par l'app et une fois par l'API). Le parcours de test a montré
+  « Invalid option: expected one of "female"|"male" » affiché tel quel dans un formulaire.
+- **Les boutons radio annoncent `checked`, pas `selected`**, et leur groupe est annoncé comme
+  un groupe : un lecteur d'écran n'annonce pas l'état d'un radio marqué `selected`.
+- **La barre d'onglets flotte** (demande du porteur du projet le 29 octobre 2026, modèle :
+  Hevy) : détachée des bords, arrondie, pastille sous l'onglet actif, et toujours au-dessus
+  de la barre d'accueil de l'iPhone. Elle est posée **hors du flux** : avec une simple marge
+  basse, React Navigation réserve la hauteur de la barre mais pas la marge, et le bas se
+  retrouve coupé sous l'écran. C'est donc `Screen` qui réserve la place
+  (`TAB_BAR_HEIGHT + spacing.xxxl`).
+- **`pnpm dev` lance l'API d'abord, puis Expo.** Lancés ensemble, les journaux de l'API
+  (une ligne par requête) faisaient défiler le QR code hors de l'écran avant qu'on ait pu le
+  scanner.
+- **Le déficit proposé par défaut vit dans `packages/shared`** (`DEFAULT_DEFICIT_KCAL`) comme
+  toutes les règles métier : 400 kcal pour perdre, 250 kcal de surplus pour prendre.
+
 ## En cours
 - Le porteur du projet a demandé le 27 octobre 2026 d'enchaîner les étapes sans
   validation intermédiaire, et de s'arrêter avant l'étape 11 (mise en ligne), qui
@@ -89,16 +127,20 @@ sortir le projet du Bureau (vers `~/Projets/BetterFit`) et libérer de l'espace 
   fois la personne connectée. Au moment du clic, elle n'a souvent pas encore de compte :
   perdre l'invitation pendant l'inscription serait le cas le plus fréquent.
 
-## Note d'exploitation — iCloud
-Le projet est sur le Bureau, donc synchronisé par iCloud, qui **décharge** les fichiers vers
-le nuage quand le disque se remplit (il l'est à 93 %). Un fichier déchargé se lit normalement
-dans le Finder, mais **bloque indéfiniment** depuis l'environnement d'exécution de Claude
-Code. Symptômes : `git` qui prétend que ce n'est pas un dépôt, un `package.json` qui paraît
-vide, Metro qui ne démarre jamais.
+## Note d'exploitation — iCloud (résolu le 29 octobre 2026)
+Le projet était sur le Bureau, donc synchronisé par iCloud, qui **décharge** les fichiers
+vers le nuage quand le disque se remplit. Un fichier déchargé se lit normalement dans le
+Finder, mais **bloque indéfiniment** depuis l'environnement d'exécution de Claude Code.
+Symptômes : `git` qui prétend que ce n'est pas un dépôt, un `package.json` qui paraît vide,
+Metro qui ne démarre jamais.
 
-Remède : rapatrier les fichiers hors du bac à sable, par exemple
-`find <dossier> -type f -exec cat {} + > /dev/null`. Remède durable : sortir le projet du
-Bureau, ou libérer de l'espace disque.
+**Les deux causes ont été traitées le 29 octobre 2026** : le projet vit désormais dans
+`~/Projets/BetterFit`, hors iCloud, et le disque est redescendu à 46 % d'occupation. Les
+tests, le typecheck et le lint ont été rejoués au nouvel emplacement : tout passe, et plus
+aucun fichier n'est déchargé (`ls -lOR . | grep -c dataless` renvoie 0).
+
+En cas de rechute ailleurs : rapatrier les fichiers hors du bac à sable, par exemple
+`find <dossier> -type f -exec cat {} + > /dev/null`.
 
 ## Décisions prises
 - Stack : Expo (web + iOS + Android), API Node/TypeScript/Fastify, PostgreSQL + Drizzle, hébergement sur le VPS du porteur du projet.

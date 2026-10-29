@@ -7,4 +7,6 @@ export * from './nutrition.js';
 export * from './profile.js';
 export * from './programs.js';
 export * from './theme.js';
+export * from './weight.js';
 export * from './workouts.js';
+export * from './zod-locale.js';

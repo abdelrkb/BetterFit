@@ -36,6 +36,8 @@ type SessionState = {
   signIn: (input: LoginInput) => Promise<void>;
   signOut: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  /** Met à jour le dernier poids connu, après une pesée saisie dans l'app. */
+  setLatestWeightKg: (weightKg: number | null) => void;
   completeOnboarding: (input: OnboardingInput) => Promise<void>;
   updateProfile: (input: ProfileUpdate) => Promise<void>;
   updateUser: (input: UpdateUserInput) => Promise<void>;
@@ -162,6 +164,10 @@ export const useSession = create<SessionState>((set, get) => {
         profile: me.profile,
         latestWeightKg: me.latestWeightKg,
       });
+    },
+
+    setLatestWeightKg(weightKg) {
+      set({ latestWeightKg: weightKg });
     },
 
     async completeOnboarding(input) {

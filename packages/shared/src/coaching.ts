@@ -158,15 +158,23 @@ export type AssignProgramInput = z.infer<typeof assignProgramSchema>;
  *
  * Le poids varie de plus d'un kilo d'un jour à l'autre selon l'eau et la
  * digestion : c'est la tendance qu'il faut regarder, pas le chiffre du matin.
+ *
+ * La fenêtre se compte en **jours de calendrier**, pas en nombre de pesées :
+ * quelqu'un qui se pèse deux fois par semaine aurait sinon une moyenne sur
+ * presque un mois, qui ne réagirait plus à rien.
  */
 export function weightTrend(
   entries: { date: string; weightKg: number }[],
   windowDays = 7,
 ): WeightPoint[] {
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const times = sorted.map((entry) => Date.parse(`${entry.date}T00:00:00Z`));
+  const windowMs = (windowDays - 1) * DAY_MS;
 
   return sorted.map((entry, index) => {
-    const start = Math.max(0, index - windowDays + 1);
+    let start = index;
+    while (start > 0 && times[index]! - times[start - 1]! <= windowMs) start -= 1;
+
     const window = sorted.slice(start, index + 1);
     const sum = window.reduce((total, item) => total + item.weightKg, 0);
 
@@ -177,3 +185,5 @@ export function weightTrend(
     };
   });
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;

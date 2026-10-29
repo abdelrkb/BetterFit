@@ -56,6 +56,15 @@ export default function TrainingScreen() {
         <Button block label={t('training.create')} onPress={() => {}} />
       </Link>
 
+      {/* La bibliothèque d'exercices n'a pas d'onglet à elle : on y entre d'ici. */}
+      <Link href="/exercises" asChild>
+        <Button block variant="secondary" label={t('training.openExercises')} onPress={() => {}} />
+      </Link>
+
+      <Link href="/workout/history" asChild>
+        <Button block variant="ghost" label={t('training.openHistory')} onPress={() => {}} />
+      </Link>
+
       {programs.isError ? <Banner message={errorMessage(programs.error)} /> : null}
 
       {programs.isPending ? (

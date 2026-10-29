@@ -118,7 +118,7 @@
   },
   "home": {
     "greeting": "Salut {{name}}",
-    "subtitle": "Ton espace est prêt. Les séances et le suivi arrivent aux prochaines étapes.",
+    "subtitle": "Voici ta journée.",
     "profileCardTitle": "Ton profil",
     "sessions": "{{count}} séance par semaine",
     "sessions_other": "{{count}} séances par semaine",
@@ -131,7 +131,30 @@
     "openExercises": "Parcourir les exercices",
     "openTraining": "Mes programmes",
     "openHistory": "Mes séances et ma progression",
-    "openCoach": "Espace coach"
+    "openCoach": "Espace coach",
+    "caloriesOverline": "Aujourd’hui",
+    "caloriesTitle": "Tes calories",
+    "caloriesNoProfile": "Remplis ta taille, ton âge et ton poids dans ton profil pour voir ton objectif du jour.",
+    "ringRemaining": "kcal restantes",
+    "ringOver": "kcal au-dessus",
+    "ringDetail": "{{consumed}} kcal mangées sur {{target}}",
+    "ringLabel": "Anneau des calories : {{consumed}} kcal mangées sur un objectif de {{target}}.",
+    "weightOverline": "Suivi",
+    "weightTitle": "Ton poids",
+    "weightLabel": "Poids du jour (kg)",
+    "weightFirst": "Saisir mon poids",
+    "weightUpdate": "Mettre à jour",
+    "weightInvalid": "Saisis un poids entre {{min}} et {{max}} kg.",
+    "weightNoTrend": "La tendance apparaît après une semaine de pesées.",
+    "weightTrendLabel": "sur les 7 derniers jours",
+    "weightUp": "▲ {{value}} kg",
+    "weightDown": "▼ {{value}} kg",
+    "recentOverline": "Dernières séances",
+    "recentTitle": "Ce que tu as fait",
+    "recentLine": "{{date}} · {{minutes}} min · {{volume}} t soulevées",
+    "recentOpen": "Ouvrir la séance {{name}}",
+    "recentEmptyTitle": "Pas encore de séance",
+    "recentEmptyBody": "Ta première séance s’affichera ici dès que tu l’auras terminée."
   },
   "profile": {
     "title": "Mon profil",
@@ -158,7 +181,9 @@
     "deleteConfirm": "Confirme avec ton mot de passe",
     "consentGiven": "Accord donné pour les données de santé le {{date}}.",
     "saveChanges": "Enregistrer les modifications",
-    "coachSection": "Coaching"
+    "coachSection": "Coaching",
+    "openCoach": "Espace coach",
+    "openDemo": "Voir le style et la mascotte"
   },
   "demo": {
     "title": "Le style de BetterFit",
@@ -345,7 +370,9 @@
     "setsAndReps": "{{sets}} × {{reps}}",
     "edit": "Modifier ce programme",
     "duplicate": "Dupliquer",
-    "delete": "Supprimer ce programme"
+    "delete": "Supprimer ce programme",
+    "openExercises": "Parcourir les exercices",
+    "openHistory": "Mes séances et ma progression"
   },
   "workout": {
     "todayTitle": "La séance du jour",
@@ -534,5 +561,36 @@
     "invitationBody": "Ton invitation est gardée de côté. Connecte-toi ou crée ton compte : le coaching démarrera tout seul juste après.",
     "invitationMissing": "Ce lien est incomplet. Redemande une invitation à ton coach.",
     "invitationContinue": "Continuer"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "training": "Programme",
+    "nutrition": "Nutrition",
+    "profile": "Profil"
+  },
+  "nutrition": {
+    "title": "Nutrition",
+    "todayOverline": "Aujourd’hui",
+    "todayTitle": "Tes calories du jour",
+    "journalComing": "Le journal alimentaire arrive : pour l’instant, l’anneau montre ton objectif.",
+    "macrosTitle": "Ta répartition",
+    "protein": "Protéines",
+    "carbs": "Glucides",
+    "fat": "Lipides",
+    "macroValue": "{{grams}} g · {{pct}} %",
+    "deficitOverline": "Le déficit calorique",
+    "deficitTitle": "D’où vient ton objectif",
+    "bmr": "kcal au repos",
+    "maintenance": "kcal pour maintenir",
+    "target": "kcal visées",
+    "explainMaintain": "Tu manges ce que tu dépenses : ton poids reste stable.",
+    "explainLose": "Tu manges {{kcal}} kcal de moins que ton maintien, soit environ {{kg}} kg par semaine. Lentement, mais sans reprendre.",
+    "explainGain": "Tu manges {{kcal}} kcal de plus que ton maintien, soit environ {{kg}} kg par semaine. Un surplus léger, pour prendre du muscle et peu de gras.",
+    "deficitTooLarge": "Ce déficit est trop important : au-delà d’un quart du maintien, on perd du muscle et on reprend presque toujours.",
+    "water": "Vise environ {{liters}} litres d’eau par jour.",
+    "comingTitle": "La suite",
+    "comingBody": "Le menu du jour, les plats, les recettes et la liste de courses avec les prix arrivent à la prochaine étape.",
+    "noProfileTitle": "Il manque ton profil",
+    "noProfileBody": "Renseigne ta taille, ta date de naissance et ton poids pour que BetterFit calcule tes objectifs."
   }
 }

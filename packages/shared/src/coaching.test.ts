@@ -51,4 +51,16 @@ describe('weightTrend', () => {
 
     expect(trend[0]?.date).toBe('2026-10-01');
   });
+
+  it('compte la fenêtre en jours, pas en nombre de pesées', () => {
+    // Deux pesées à trois semaines d'écart : la seconde ne doit pas être
+    // moyennée avec la première, qui est hors fenêtre.
+    const trend = weightTrend([
+      { date: '2026-10-01', weightKg: 80 },
+      { date: '2026-10-22', weightKg: 78 },
+    ]);
+
+    expect(trend[1]?.trendKg).toBe(78);
+  });
+
 });
